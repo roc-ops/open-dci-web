@@ -19,15 +19,17 @@ let wasmReady = false;
 export async function initWasm(): Promise<void> {
   if (wasmReady) return;
 
+  const base = import.meta.env.BASE_URL;
+
   // Load Go's wasm_exec.js glue script.
-  await loadScript("/wasm_exec.js");
+  await loadScript(`${base}wasm_exec.js`);
 
   // Instantiate the Go WASM module.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const go = new (globalThis as any).Go();
 
   const result = await WebAssembly.instantiateStreaming(
-    fetch("/opendci.wasm"),
+    fetch(`${base}opendci.wasm`),
     go.importObject,
   );
 
@@ -35,7 +37,7 @@ export async function initWasm(): Promise<void> {
   go.run(result.instance);
 
   // Load the TLV schema from the static asset.
-  const schemaResp = await fetch("/docsis-config.jtd.json");
+  const schemaResp = await fetch(`${base}docsis-config.jtd.json`);
   if (!schemaResp.ok) {
     throw new Error(`Failed to fetch schema: ${schemaResp.status}`);
   }
@@ -61,7 +63,7 @@ export async function initWasm(): Promise<void> {
 
   // Load the full MIB library for OID/enum resolution.
   try {
-    const mibResp = await fetch("/mibs.json");
+    const mibResp = await fetch(`${base}mibs.json`);
     if (mibResp.ok) {
       const mibBundle: Record<string, string> = await mibResp.json();
       const mibCount = Object.keys(mibBundle).length;
