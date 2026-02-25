@@ -5,6 +5,7 @@ import monacoEditorPluginModule from "vite-plugin-monaco-editor";
 const monacoEditorPlugin = (monacoEditorPluginModule as unknown as { default: typeof monacoEditorPluginModule }).default ?? monacoEditorPluginModule;
 
 export default defineConfig({
+  base: '/open-dci-web/',
   plugins: [
     monacoEditorPlugin({
       languageWorkers: ["json"],
