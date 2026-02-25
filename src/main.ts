@@ -10,6 +10,7 @@ import { registerSchema, getSchema } from "./schema/loader";
 import { buildMetadataIndex } from "./schema/metadata";
 import { registerHoverProvider } from "./language/hover-provider";
 import { registerCompletionProvider } from "./language/completion-provider";
+import { registerPropertyCompletionProvider } from "./language/property-completion-provider";
 import { registerDiagnostics } from "./language/diagnostics";
 import { registerCommentUpdater } from "./language/comment-updater";
 import { createToolbar } from "./ui/toolbar";
@@ -62,6 +63,7 @@ function main(): void {
   // 5. Register custom language providers
   registerHoverProvider(metadataIndex);
   registerCompletionProvider(metadataIndex);
+  registerPropertyCompletionProvider();
   registerDiagnostics();
 
   // 6. Create UI
