@@ -1,6 +1,7 @@
 /**
  * Toolbar — top bar with file operations and codec actions.
  */
+import type { PacketCableVariant } from "../codec/index";
 
 export interface ToolbarCallbacks {
   onOpen: () => void;
@@ -16,6 +17,10 @@ export interface ToolbarResult {
   setCodecReady: (ready: boolean, error?: string) => void;
   /** Returns the current CMTS shared-secret value (empty string if not set). */
   getSecret: () => string;
+  /** Show or hide the PacketCable hash controls based on config type detection. */
+  setPacketCable: (visible: boolean) => void;
+  /** Returns the selected PacketCable hash variant, or undefined if not enabled. */
+  getPacketCableVariant: () => PacketCableVariant | undefined;
 }
 
 /**
@@ -56,6 +61,33 @@ export function createToolbar(
     secretToggle.classList.toggle("toolbar-secret-toggle-active", hidden);
   });
 
+  // PacketCable hash controls
+  const pcCheckbox = document.createElement("input");
+  pcCheckbox.type = "checkbox";
+  pcCheckbox.id = "pc-hash-checkbox";
+  pcCheckbox.className = "toolbar-pc-checkbox";
+  pcCheckbox.title = "Enable PacketCable hash for MTA config";
+
+  const pcLabel = document.createElement("label");
+  pcLabel.htmlFor = "pc-hash-checkbox";
+  pcLabel.className = "toolbar-pc-label";
+  pcLabel.textContent = "PC Hash";
+
+  const pcSelect = document.createElement("select");
+  pcSelect.className = "toolbar-pc-select";
+  pcSelect.title = "PacketCable hash variant";
+  for (const v of ["NA", "EU", "IETF"] as const) {
+    const opt = document.createElement("option");
+    opt.value = v.toLowerCase();
+    opt.textContent = v;
+    pcSelect.appendChild(opt);
+  }
+  pcSelect.disabled = true;
+
+  pcCheckbox.addEventListener("change", () => {
+    pcSelect.disabled = !pcCheckbox.checked;
+  });
+
   const title = document.createElement("span");
   title.className = "toolbar-title";
   title.textContent = "OpenDCI Config Editor";
@@ -70,6 +102,13 @@ export function createToolbar(
   secretGroup.appendChild(secretInput);
   secretGroup.appendChild(secretToggle);
 
+  const pcGroup = document.createElement("div");
+  pcGroup.className = "toolbar-group toolbar-pc-group";
+  pcGroup.style.display = "none";
+  pcGroup.appendChild(pcCheckbox);
+  pcGroup.appendChild(pcLabel);
+  pcGroup.appendChild(pcSelect);
+
   const codecGroup = document.createElement("div");
   codecGroup.className = "toolbar-group";
   codecGroup.appendChild(encodeBtn);
@@ -82,6 +121,7 @@ export function createToolbar(
   toolbar.appendChild(title);
   toolbar.appendChild(fileGroup);
   toolbar.appendChild(secretGroup);
+  toolbar.appendChild(pcGroup);
   toolbar.appendChild(codecGroup);
   toolbar.appendChild(mibGroup);
   container.appendChild(toolbar);
@@ -104,7 +144,26 @@ export function createToolbar(
     }
   }
 
-  return { toolbar, setCodecReady, getSecret: () => secretInput.value };
+  function setPacketCable(visible: boolean): void {
+    pcGroup.style.display = visible ? "flex" : "none";
+    if (!visible) {
+      pcCheckbox.checked = false;
+      pcSelect.disabled = true;
+    }
+  }
+
+  function getPacketCableVariant(): PacketCableVariant | undefined {
+    if (pcGroup.style.display === "none" || !pcCheckbox.checked) return undefined;
+    return pcSelect.value as PacketCableVariant;
+  }
+
+  return {
+    toolbar,
+    setCodecReady,
+    getSecret: () => secretInput.value,
+    setPacketCable,
+    getPacketCableVariant,
+  };
 }
 
 function createButton(

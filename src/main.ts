@@ -22,6 +22,7 @@ import { initMibState, showMibModal } from "./ui/mib-manager";
 import { openFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
+import { detectPacketCable } from "./config-detect";
 
 // Default content shown when the editor first opens
 const DEFAULT_CONTENT = `{
@@ -75,7 +76,7 @@ function main(): void {
   let currentFileName = "untitled.jsonc";
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
-  const { setCodecReady, getSecret } = createToolbar(app, {
+  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant } = createToolbar(app, {
     onOpen: async () => {
       try {
         const result = await openFile();
@@ -122,7 +123,8 @@ function main(): void {
       try {
         const content = editor.getValue();
         const secret = getSecret() || undefined;
-        const binary = encode(content, secret);
+        const pcVariant = getPacketCableVariant();
+        const binary = encode(content, secret, pcVariant);
         const binaryFileName = currentFileName.replace(/\.(jsonc|json)$/i, ".bin");
         await saveBinaryFile(binary, binaryFileName);
       } catch (e) {
@@ -178,11 +180,19 @@ function main(): void {
   // 10. Register SNMP MIB CodeLens (Add/Edit buttons on SnmpMibObject arrays)
   registerSnmpMibCodeLens(editor, app);
 
+  // 11. Detect PacketCable config type and update toolbar on content changes
+  const updateConfigDetection = () => {
+    const content = editor.getValue();
+    setPacketCable(detectPacketCable(content));
+  };
+  editor.onDidChangeModelContent(updateConfigDetection);
+  updateConfigDetection();
+
   // Status bar
   const statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
 
-  // 11. Initialize WASM codec with loading overlay
+  // 12. Initialize WASM codec with loading overlay
   const loading = createLoadingOverlay(app);
   initWasm((msg) => loading.setMessage(msg))
     .then((mibBundle) => {
