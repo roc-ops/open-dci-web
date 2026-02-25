@@ -109,3 +109,47 @@ body {
 .status-cursor {
   color: #5a6374;
 }
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 29, 35, 0.85);
+}
+
+.loading-overlay-fade-out {
+  animation: fade-out 0.3s ease forwards;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #3e4451;
+  border-top-color: #61afef;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-message {
+  font-size: 14px;
+  color: #abb2bf;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-out {
+  to { opacity: 0; }
+}

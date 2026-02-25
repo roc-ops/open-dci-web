@@ -16,6 +16,7 @@ import { registerCommentUpdater } from "./language/comment-updater";
 import { registerAutoSuggest } from "./language/auto-suggest";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
+import { createLoadingOverlay } from "./ui/loading-overlay";
 import { openFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
@@ -170,11 +171,16 @@ function main(): void {
   const statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
 
-  // 10. Initialize WASM codec in the background, enable buttons when ready
-  initWasm()
-    .then(() => setCodecReady(true))
+  // 10. Initialize WASM codec with loading overlay
+  const loading = createLoadingOverlay(app);
+  initWasm((msg) => loading.setMessage(msg))
+    .then(() => {
+      loading.dismiss();
+      setCodecReady(true);
+    })
     .catch((err) => {
       console.error("Failed to initialize WASM codec:", err);
+      loading.dismiss();
       setCodecReady(false, err instanceof Error ? err.message : String(err));
     });
 }
