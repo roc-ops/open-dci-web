@@ -68,16 +68,11 @@ function main(): void {
   registerPropertyCompletionProvider();
   registerDiagnostics();
 
-  // 6. Initialize WASM codec in the background
-  initWasm().catch((err) => {
-    console.error("Failed to initialize WASM codec:", err);
-  });
-
-  // 7. Create UI
+  // 6. Create UI
   let currentFileName = "untitled.jsonc";
 
-  // Toolbar
-  createToolbar(app, {
+  // Toolbar (encode/decode start disabled until WASM is ready)
+  const { setCodecReady } = createToolbar(app, {
     onOpen: async () => {
       try {
         const result = await openFile();
@@ -120,10 +115,6 @@ function main(): void {
       }
     },
     onEncode: async () => {
-      if (!isReady()) {
-        alert("WASM codec is still loading. Please try again in a moment.");
-        return;
-      }
       try {
         const content = editor.getValue();
         const binary = encode(content);
@@ -137,10 +128,6 @@ function main(): void {
       }
     },
     onDecode: async () => {
-      if (!isReady()) {
-        alert("WASM codec is still loading. Please try again in a moment.");
-        return;
-      }
       try {
         const result = await openFile();
         let binary: Uint8Array;
@@ -182,6 +169,14 @@ function main(): void {
   // Status bar
   const statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
+
+  // 10. Initialize WASM codec in the background, enable buttons when ready
+  initWasm()
+    .then(() => setCodecReady(true))
+    .catch((err) => {
+      console.error("Failed to initialize WASM codec:", err);
+      setCodecReady(false, err instanceof Error ? err.message : String(err));
+    });
 }
 
 main();
