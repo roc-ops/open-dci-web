@@ -59,6 +59,24 @@ export async function initWasm(): Promise<void> {
     console.warn("MIB resolver init failed (non-fatal):", e);
   }
 
+  // Load the full MIB library for OID/enum resolution.
+  try {
+    const mibResp = await fetch("/mibs.json");
+    if (mibResp.ok) {
+      const mibBundle: Record<string, string> = await mibResp.json();
+      const mibCount = Object.keys(mibBundle).length;
+      if (mibCount > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const loadResult: { ok?: boolean; loaded?: number; error?: string } = (globalThis as any).opendciLoadMIBs(mibBundle);
+        if (loadResult.error) {
+          console.warn("MIB loading failed (non-fatal):", loadResult.error);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("MIB loading failed (non-fatal):", e);
+  }
+
   wasmReady = true;
 }
 
