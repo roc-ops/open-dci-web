@@ -20,8 +20,8 @@ export type ProgressCallback = (message: string) => void;
  *
  * @param onProgress - optional callback invoked with status messages during init
  */
-export async function initWasm(onProgress?: ProgressCallback): Promise<void> {
-  if (wasmReady) return;
+export async function initWasm(onProgress?: ProgressCallback): Promise<Record<string, string>> {
+  if (wasmReady) return {};
 
   const base = import.meta.env.BASE_URL;
   const report = onProgress ?? (() => {});
@@ -70,11 +70,12 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<void> {
   }
 
   // Load the full MIB library for OID/enum resolution.
+  let mibBundle: Record<string, string> = {};
   try {
     report("Downloading MIB library\u2026");
     const mibResp = await fetch(`${base}mibs.json`);
     if (mibResp.ok) {
-      const mibBundle: Record<string, string> = await mibResp.json();
+      mibBundle = await mibResp.json();
       const mibCount = Object.keys(mibBundle).length;
       if (mibCount > 0) {
         report(`Parsing ${mibCount} MIB files\u2026`);
@@ -93,6 +94,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<void> {
   }
 
   wasmReady = true;
+  return mibBundle;
 }
 
 /**
@@ -136,6 +138,19 @@ export function loadMIBs(mibFiles: Record<string, string>): number {
     throw new Error(result.error);
   }
   return result.loaded ?? 0;
+}
+
+/**
+ * Reset the MIB resolver, clearing all loaded MIBs.
+ * After calling this, you can reload MIBs with loadMIBs().
+ */
+export function resetMIBs(): void {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { ok?: boolean; error?: string } = (globalThis as any).opendciInitMIBs();
+  if (result.error) {
+    throw new Error(`Failed to reset MIBs: ${result.error}`);
+  }
 }
 
 /**

@@ -153,3 +153,164 @@ body {
 @keyframes fade-out {
   to { opacity: 0; }
 }
+
+/* MIB Manager Modal */
+.mib-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.mib-modal {
+  background: #21252b;
+  border: 1px solid #333842;
+  border-radius: 6px;
+  width: 520px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.mib-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333842;
+}
+
+.mib-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e9f0;
+}
+
+.mib-modal-close {
+  background: none;
+  border: none;
+  color: #5a6374;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.mib-modal-close:hover {
+  color: #e5e9f0;
+}
+
+.mib-modal-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #333842;
+}
+
+.mib-modal-count {
+  font-size: 12px;
+  color: #5a6374;
+}
+
+.mib-modal-filter {
+  margin-left: auto;
+  padding: 3px 8px;
+  font-size: 12px;
+  border: 1px solid #3e4451;
+  border-radius: 3px;
+  background: #2c313a;
+  color: #abb2bf;
+  outline: none;
+  width: 150px;
+}
+
+.mib-modal-filter:focus {
+  border-color: #61afef;
+}
+
+.mib-modal-status {
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #61afef;
+  background: rgba(97, 175, 239, 0.1);
+  border-bottom: 1px solid #333842;
+}
+
+.mib-modal-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.mib-modal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid #2c313a;
+}
+
+.mib-modal-row:hover {
+  background: #2c313a;
+}
+
+.mib-modal-name {
+  flex: 1;
+  color: #abb2bf;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mib-modal-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.mib-modal-badge-bundled {
+  background: rgba(97, 175, 239, 0.15);
+  color: #61afef;
+}
+
+.mib-modal-badge-user {
+  background: rgba(152, 195, 121, 0.15);
+  color: #98c379;
+}
+
+.mib-modal-remove {
+  background: none;
+  border: none;
+  color: #5a6374;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.mib-modal-remove:hover {
+  color: #e06c75;
+}
+
+.mib-modal-remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mib-modal-empty {
+  padding: 16px;
+  text-align: center;
+  color: #5a6374;
+  font-size: 12px;
+}
