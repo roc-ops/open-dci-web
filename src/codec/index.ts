@@ -4,5 +4,5 @@
  */
 
 export type { Encoder, Decoder } from "./types.js";
-export type { ProgressCallback } from "./wasm-codec.js";
-export { initWasm, encode, decode, isReady, loadMIBs, resetMIBs } from "./wasm-codec.js";
+export type { ProgressCallback, MIBTreeNode } from "./wasm-codec.js";
+export { initWasm, encode, decode, isReady, loadMIBs, resetMIBs, queryMIBTree, resolveName, resolveOID } from "./wasm-codec.js";

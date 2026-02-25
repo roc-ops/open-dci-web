@@ -1,12 +1,15 @@
 /**
  * WASM-based encoder/decoder using the OpenDCI Go reference implementation.
  *
- * The Go WASM module exposes five global functions:
+ * The Go WASM module exposes eight global functions:
  *   - opendciLoadSchema(string) -> {ok: true} | {error: string}
- *   - opendciDecode(Uint8Array) -> {result: string} | {error: string}
- *   - opendciEncode(string) -> {result: Uint8Array} | {error: string}
+ *   - opendciDecode(Uint8Array, secret?) -> {result: string} | {error: string}
+ *   - opendciEncode(string, secret?, pad?) -> {result: Uint8Array} | {error: string}
  *   - opendciInitMIBs() -> {ok: true} | {error: string}
  *   - opendciLoadMIBs({[filename]: string}) -> {ok: true, loaded: number} | {error: string}
+ *   - opendciQueryMIBTree() -> {result: string} | {error: string}
+ *   - opendciResolveName(numericOid) -> {result: string} | {error: string}
+ *   - opendciResolveOID(name) -> {result: string} | {error: string}
  */
 
 let wasmReady = false;
@@ -155,6 +158,62 @@ export function resetMIBs(): void {
   if (result.error) {
     throw new Error(`Failed to reset MIBs: ${result.error}`);
   }
+}
+
+/** Node in the MIB OID tree returned by queryMIBTree(). */
+export interface MIBTreeNode {
+  oid: string;
+  name: string;
+  module: string;
+  description: string;
+  syntax: string;
+  access: string;
+  nodeType: string;
+  children?: MIBTreeNode[];
+}
+
+/**
+ * Query the full MIB OID tree from the WASM resolver.
+ * Returns the tree rooted at OID "1" (iso) with recursive children.
+ * Requires MIBs to be loaded via initWasm() first.
+ */
+export function queryMIBTree(): MIBTreeNode {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { result?: string; error?: string } = (globalThis as any).opendciQueryMIBTree();
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return JSON.parse(result.result as string);
+}
+
+/**
+ * Resolve a numeric OID to its full named path.
+ * e.g. "1.3.6.1.2.1.1.1" → "iso.org.dod.internet.mgmt.mib-2.system.sysDescr"
+ */
+export function resolveName(numericOid: string): string {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { result?: string; error?: string } = (globalThis as any).opendciResolveName(numericOid);
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.result as string;
+}
+
+/**
+ * Resolve a named OID to its numeric dotted-decimal form.
+ * Accepts MODULE::objectName, plain name, or dotted named path.
+ * e.g. "IF-MIB::ifAdminStatus" → "1.3.6.1.2.1.2.2.1.7"
+ */
+export function resolveOID(name: string): string {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { result?: string; error?: string } = (globalThis as any).opendciResolveOID(name);
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.result as string;
 }
 
 /**
