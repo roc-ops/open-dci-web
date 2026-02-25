@@ -11,6 +11,7 @@ import { buildMetadataIndex } from "./schema/metadata";
 import { registerHoverProvider } from "./language/hover-provider";
 import { registerCompletionProvider } from "./language/completion-provider";
 import { registerDiagnostics } from "./language/diagnostics";
+import { registerCommentUpdater } from "./language/comment-updater";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { openFile } from "./file/open";
@@ -107,6 +108,9 @@ function main(): void {
   // Create editor
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
   editor.updateOptions({ theme: THEME_NAME });
+
+  // 7. Register comment updater for x-docsis-validValues
+  registerCommentUpdater(editor, metadataIndex);
 
   // Status bar
   const statusBar = createStatusBar(app, editor);
