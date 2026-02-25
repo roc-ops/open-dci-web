@@ -116,16 +116,27 @@ export function decode(binary: Uint8Array, secret?: string): string {
   return result.result as string;
 }
 
+/** PacketCable hash variant for MTA config files. */
+export type PacketCableVariant = "na" | "eu" | "ietf";
+
 /**
  * Encode a JSON/JSONC string into a binary DOCSIS config file.
+ * Optionally computes CMTS MIC (if secret provided) and/or
+ * PacketCable hash (if variant provided, for MTA configs only).
  * Throws on error.
  */
-export function encode(json: string, secret?: string): Uint8Array {
+export function encode(json: string, secret?: string, packetCableHash?: PacketCableVariant): Uint8Array {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // Build args list — only pass defined arguments to avoid Go seeing "undefined" strings.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: Uint8Array; error?: string } = secret
-    ? (globalThis as any).opendciEncode(json, secret)
-    : (globalThis as any).opendciEncode(json);
+  const args: any[] = [json];
+  if (secret || packetCableHash) args.push(secret ?? "");
+  if (packetCableHash) {
+    args.push(false); // pad (not used from web UI)
+    args.push(packetCableHash);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { result?: Uint8Array; error?: string } = (globalThis as any).opendciEncode(...args);
   if (result.error) {
     throw new Error(result.error);
   }
