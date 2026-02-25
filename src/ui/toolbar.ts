@@ -14,6 +14,8 @@ export interface ToolbarResult {
   toolbar: HTMLElement;
   /** Call when WASM codec becomes ready (or fails). */
   setCodecReady: (ready: boolean, error?: string) => void;
+  /** Returns the current CMTS shared-secret value (empty string if not set). */
+  getSecret: () => string;
 }
 
 /**
@@ -37,6 +39,12 @@ export function createToolbar(
   decodeBtn.title = "WASM codec is loading\u2026";
   mibsBtn.title = "WASM codec is loading\u2026";
 
+  const secretInput = document.createElement("input");
+  secretInput.type = "password";
+  secretInput.className = "toolbar-secret";
+  secretInput.placeholder = "CMTS Secret";
+  secretInput.title = "CMTS shared-secret for MIC computation (optional)";
+
   const title = document.createElement("span");
   title.className = "toolbar-title";
   title.textContent = "OpenDCI Config Editor";
@@ -45,6 +53,10 @@ export function createToolbar(
   fileGroup.className = "toolbar-group";
   fileGroup.appendChild(openBtn);
   fileGroup.appendChild(saveBtn);
+
+  const secretGroup = document.createElement("div");
+  secretGroup.className = "toolbar-group";
+  secretGroup.appendChild(secretInput);
 
   const codecGroup = document.createElement("div");
   codecGroup.className = "toolbar-group";
@@ -57,6 +69,7 @@ export function createToolbar(
 
   toolbar.appendChild(title);
   toolbar.appendChild(fileGroup);
+  toolbar.appendChild(secretGroup);
   toolbar.appendChild(codecGroup);
   toolbar.appendChild(mibGroup);
   container.appendChild(toolbar);
@@ -79,7 +92,7 @@ export function createToolbar(
     }
   }
 
-  return { toolbar, setCodecReady };
+  return { toolbar, setCodecReady, getSecret: () => secretInput.value };
 }
 
 function createButton(

@@ -67,6 +67,26 @@ body {
   cursor: not-allowed;
 }
 
+.toolbar-secret {
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #3e4451;
+  border-radius: 3px;
+  background: #2c313a;
+  color: #abb2bf;
+  outline: none;
+  width: 160px;
+  font-family: monospace;
+}
+
+.toolbar-secret:focus {
+  border-color: #61afef;
+}
+
+.toolbar-secret::placeholder {
+  color: #5a6374;
+}
+
 /* Editor container */
 .editor-container {
   flex: 1;

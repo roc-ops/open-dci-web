@@ -74,7 +74,7 @@ function main(): void {
   let currentFileName = "untitled.jsonc";
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
-  const { setCodecReady } = createToolbar(app, {
+  const { setCodecReady, getSecret } = createToolbar(app, {
     onOpen: async () => {
       try {
         const result = await openFile();
@@ -89,7 +89,8 @@ function main(): void {
             return;
           }
           try {
-            const jsonc = decode(result.content);
+            const secret = getSecret() || undefined;
+            const jsonc = decode(result.content, secret);
             editor.setValue(jsonc);
             currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
             setStatusFileName(statusBar, currentFileName);
@@ -119,7 +120,8 @@ function main(): void {
     onEncode: async () => {
       try {
         const content = editor.getValue();
-        const binary = encode(content);
+        const secret = getSecret() || undefined;
+        const binary = encode(content, secret);
         const binaryFileName = currentFileName.replace(/\.(jsonc|json)$/i, ".bin");
         await saveBinaryFile(binary, binaryFileName);
       } catch (e) {
@@ -139,7 +141,8 @@ function main(): void {
         } else {
           binary = result.content;
         }
-        const jsonc = decode(binary);
+        const secret = getSecret() || undefined;
+        const jsonc = decode(binary, secret);
         editor.setValue(jsonc);
         currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
         setStatusFileName(statusBar, currentFileName);

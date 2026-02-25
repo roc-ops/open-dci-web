@@ -101,10 +101,12 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<Record<st
  * Decode a binary DOCSIS config file into a JSONC string.
  * Throws on error.
  */
-export function decode(binary: Uint8Array): string {
+export function decode(binary: Uint8Array, secret?: string): string {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: string; error?: string } = (globalThis as any).opendciDecode(binary);
+  const result: { result?: string; error?: string } = secret
+    ? (globalThis as any).opendciDecode(binary, secret)
+    : (globalThis as any).opendciDecode(binary);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -115,10 +117,12 @@ export function decode(binary: Uint8Array): string {
  * Encode a JSON/JSONC string into a binary DOCSIS config file.
  * Throws on error.
  */
-export function encode(json: string): Uint8Array {
+export function encode(json: string, secret?: string): Uint8Array {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: Uint8Array; error?: string } = (globalThis as any).opendciEncode(json);
+  const result: { result?: Uint8Array; error?: string } = secret
+    ? (globalThis as any).opendciEncode(json, secret)
+    : (globalThis as any).opendciEncode(json);
   if (result.error) {
     throw new Error(result.error);
   }
