@@ -1,0 +1,24 @@
+// Basic DOCSIS configuration example
+// See https://github.com/roc-ops/open-dci for schema documentation
+{
+  // Network access control
+  "NetworkAccess": 1,
+
+  // Downstream service flow
+  "ServiceFlowDown": [
+    {
+      "ServiceFlowRef": 1,
+      "QosParamSetType": 7,
+      "MaxSustainedRate": 50000000
+    }
+  ],
+
+  // Upstream service flow
+  "ServiceFlowUp": [
+    {
+      "ServiceFlowRef": 2,
+      "QosParamSetType": 7,
+      "MaxSustainedRate": 10000000
+    }
+  ]
+}

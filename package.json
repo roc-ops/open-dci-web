@@ -1,0 +1,23 @@
+{
+  "name": "opendci-web",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Monaco-based OpenDCI DOCSIS config file editor",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "monaco-editor": "^0.52.0",
+    "vite-plugin-monaco-editor": "^1.1.0",
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "packageManager": "pnpm@9.12.0"
+}
