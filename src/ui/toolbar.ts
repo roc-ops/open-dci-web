@@ -1,10 +1,12 @@
 /**
- * Toolbar — top bar with file operations and future codec actions.
+ * Toolbar — top bar with file operations and codec actions.
  */
 
 export interface ToolbarCallbacks {
   onOpen: () => void;
   onSave: () => void;
+  onEncode: () => void;
+  onDecode: () => void;
 }
 
 /**
@@ -20,8 +22,8 @@ export function createToolbar(
 
   const openBtn = createButton("Open", callbacks.onOpen);
   const saveBtn = createButton("Save", callbacks.onSave);
-  const encodeBtn = createButton("Encode", () => {}, true);
-  const decodeBtn = createButton("Decode", () => {}, true);
+  const encodeBtn = createButton("Encode", callbacks.onEncode);
+  const decodeBtn = createButton("Decode", callbacks.onDecode);
 
   const title = document.createElement("span");
   title.className = "toolbar-title";

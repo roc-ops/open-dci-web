@@ -17,7 +17,8 @@ import { registerAutoSuggest } from "./language/auto-suggest";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { openFile } from "./file/open";
-import { saveFile } from "./file/save";
+import { saveFile, saveBinaryFile } from "./file/save";
+import { initWasm, encode, decode, isReady } from "./codec/index";
 
 // Default content shown when the editor first opens
 const DEFAULT_CONTENT = `{
@@ -67,7 +68,12 @@ function main(): void {
   registerPropertyCompletionProvider();
   registerDiagnostics();
 
-  // 6. Create UI
+  // 6. Initialize WASM codec in the background
+  initWasm().catch((err) => {
+    console.error("Failed to initialize WASM codec:", err);
+  });
+
+  // 7. Create UI
   let currentFileName = "untitled.jsonc";
 
   // Toolbar
@@ -80,10 +86,22 @@ function main(): void {
           currentFileName = result.name;
           setStatusFileName(statusBar, currentFileName);
         } else {
-          // Binary file — future: decode via codec module
-          alert(
-            `Binary file "${result.name}" loaded (${result.content.byteLength} bytes).\n\nBinary decoding is not yet implemented. Use a .jsonc file for now.`,
-          );
+          // Binary file — decode via WASM codec
+          if (!isReady()) {
+            alert("WASM codec is still loading. Please try again in a moment.");
+            return;
+          }
+          try {
+            const jsonc = decode(result.content);
+            editor.setValue(jsonc);
+            currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
+            setStatusFileName(statusBar, currentFileName);
+          } catch (decodeErr) {
+            console.error("Decode error:", decodeErr);
+            alert(
+              `Failed to decode binary file "${result.name}":\n${decodeErr instanceof Error ? decodeErr.message : String(decodeErr)}`,
+            );
+          }
         }
       } catch (e) {
         if (e instanceof Error && e.message !== "File selection cancelled") {
@@ -101,6 +119,49 @@ function main(): void {
         }
       }
     },
+    onEncode: async () => {
+      if (!isReady()) {
+        alert("WASM codec is still loading. Please try again in a moment.");
+        return;
+      }
+      try {
+        const content = editor.getValue();
+        const binary = encode(content);
+        const binaryFileName = currentFileName.replace(/\.(jsonc|json)$/i, ".bin");
+        await saveBinaryFile(binary, binaryFileName);
+      } catch (e) {
+        console.error("Encode error:", e);
+        alert(
+          `Failed to encode config:\n${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    },
+    onDecode: async () => {
+      if (!isReady()) {
+        alert("WASM codec is still loading. Please try again in a moment.");
+        return;
+      }
+      try {
+        const result = await openFile();
+        let binary: Uint8Array;
+        if (typeof result.content === "string") {
+          // If user selected a text file, convert to bytes
+          binary = new TextEncoder().encode(result.content);
+        } else {
+          binary = result.content;
+        }
+        const jsonc = decode(binary);
+        editor.setValue(jsonc);
+        currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
+        setStatusFileName(statusBar, currentFileName);
+      } catch (e) {
+        if (e instanceof Error && e.message === "File selection cancelled") return;
+        console.error("Decode error:", e);
+        alert(
+          `Failed to decode file:\n${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
+    },
   });
 
   // Editor container
@@ -112,10 +173,10 @@ function main(): void {
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
   editor.updateOptions({ theme: THEME_NAME });
 
-  // 7. Register comment updater for x-docsis-validValues
+  // 8. Register comment updater for x-docsis-validValues
   registerCommentUpdater(editor, metadataIndex);
 
-  // 8. Register auto-suggest trigger for comma/Enter/brace
+  // 9. Register auto-suggest trigger for comma/Enter/brace
   registerAutoSuggest(editor);
 
   // Status bar
