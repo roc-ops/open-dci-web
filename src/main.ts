@@ -17,22 +17,25 @@ import { openFile } from "./file/open";
 import { saveFile } from "./file/save";
 
 // Default content shown when the editor first opens
-const DEFAULT_CONTENT = `// OpenDCI DOCSIS Configuration
-// Edit your config here — validation and auto-complete are active.
-{
-  "NetworkAccess": 1,
-  "ServiceFlowDown": [
+const DEFAULT_CONTENT = `{
+  "DownstreamServiceFlow": [
     {
-      "ServiceFlowRef": 1,
-      "QosParamSetType": 7,
-      "MaxSustainedRate": 50000000
+      "DataRateUnitSetting": 2, // mega-bits per second (Mbps)
+      "MaxSustainedTrafficRate": 1000,
+      "MaxTrafficBurst": 750000,
+      "QosParamSetType": 7, // provisioned, admitted, and active set
+      "ServiceFlowReference": 20
     }
   ],
-  "ServiceFlowUp": [
+  "MaxNumCpes": 1,
+  "NetworkAccess": 1, // enabled
+  "UpstreamServiceFlow": [
     {
-      "ServiceFlowRef": 2,
-      "QosParamSetType": 7,
-      "MaxSustainedRate": 10000000
+      "DataRateUnitSetting": 2, // mega-bits per second (Mbps)
+      "MaxSustainedTrafficRate": 1000,
+      "MaxTrafficBurst": 750000,
+      "QosParamSetType": 7, // provisioned, admitted, and active set
+      "ServiceFlowReference": 10
     }
   ]
 }
