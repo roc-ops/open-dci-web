@@ -71,12 +71,13 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<void> {
 
   // Load the full MIB library for OID/enum resolution.
   try {
+    report("Downloading MIB library\u2026");
     const mibResp = await fetch(`${base}mibs.json`);
     if (mibResp.ok) {
       const mibBundle: Record<string, string> = await mibResp.json();
       const mibCount = Object.keys(mibBundle).length;
       if (mibCount > 0) {
-        report(`Loading ${mibCount} MIB files\u2026`);
+        report(`Parsing ${mibCount} MIB files\u2026`);
         // Yield to let the browser paint the progress message before the
         // synchronous opendciLoadMIBs call blocks the main thread.
         await new Promise((r) => setTimeout(r, 0));
