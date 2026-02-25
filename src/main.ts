@@ -14,6 +14,7 @@ import { registerPropertyCompletionProvider } from "./language/property-completi
 import { registerDiagnostics } from "./language/diagnostics";
 import { registerCommentUpdater } from "./language/comment-updater";
 import { registerAutoSuggest } from "./language/auto-suggest";
+import { registerSnmpMibCodeLens } from "./language/snmp-mib-codelens";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
@@ -174,11 +175,14 @@ function main(): void {
   // 9. Register auto-suggest trigger for comma/Enter/brace
   registerAutoSuggest(editor);
 
+  // 10. Register SNMP MIB CodeLens (Add/Edit buttons on SnmpMibObject arrays)
+  registerSnmpMibCodeLens(editor, app);
+
   // Status bar
   const statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
 
-  // 10. Initialize WASM codec with loading overlay
+  // 11. Initialize WASM codec with loading overlay
   const loading = createLoadingOverlay(app);
   initWasm((msg) => loading.setMessage(msg))
     .then((mibBundle) => {
