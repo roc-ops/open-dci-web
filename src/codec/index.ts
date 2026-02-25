@@ -4,4 +4,4 @@
  */
 
 export type { Encoder, Decoder } from "./types.js";
-export { initWasm, encode, decode, isReady } from "./wasm-codec.js";
+export { initWasm, encode, decode, isReady, loadMIBs } from "./wasm-codec.js";

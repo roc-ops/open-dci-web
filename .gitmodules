@@ -1,0 +1,3 @@
+[submodule "vendor/open-dci"]
+	path = vendor/open-dci
+	url = https://github.com/roc-ops/open-dci.git
