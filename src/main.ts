@@ -13,6 +13,7 @@ import { registerCompletionProvider } from "./language/completion-provider";
 import { registerPropertyCompletionProvider } from "./language/property-completion-provider";
 import { registerDiagnostics } from "./language/diagnostics";
 import { registerCommentUpdater } from "./language/comment-updater";
+import { registerAutoSuggest } from "./language/auto-suggest";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { openFile } from "./file/open";
@@ -113,6 +114,9 @@ function main(): void {
 
   // 7. Register comment updater for x-docsis-validValues
   registerCommentUpdater(editor, metadataIndex);
+
+  // 8. Register auto-suggest trigger for comma/Enter/brace
+  registerAutoSuggest(editor);
 
   // Status bar
   const statusBar = createStatusBar(app, editor);
