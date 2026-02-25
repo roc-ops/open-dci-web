@@ -3,6 +3,7 @@
  */
 
 import { loadMIBs, resetMIBs } from "../codec/index";
+import { invalidateMibBrowserCache } from "./mib-browser";
 
 export interface MibEntry {
   filename: string;
@@ -108,6 +109,7 @@ export function showMibModal(container: HTMLElement): void {
       const files = await pickMibFiles();
       if (Object.keys(files).length === 0) return;
       addUserMibs(files);
+      invalidateMibBrowserCache();
       renderList();
       updateCount();
     } catch (e) {
@@ -177,6 +179,7 @@ export function showMibModal(container: HTMLElement): void {
         loadBtn.disabled = true;
 
         await removeMib(entry.filename);
+        invalidateMibBrowserCache();
 
         status.style.display = "none";
         loadBtn.disabled = false;
