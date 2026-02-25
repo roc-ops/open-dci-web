@@ -71,7 +71,7 @@ body {
   padding: 4px 8px;
   font-size: 12px;
   border: 1px solid #3e4451;
-  border-radius: 3px;
+  border-radius: 3px 0 0 3px;
   background: #2c313a;
   color: #abb2bf;
   outline: none;
@@ -85,6 +85,23 @@ body {
 
 .toolbar-secret::placeholder {
   color: #5a6374;
+}
+
+.toolbar-secret-toggle {
+  background: none;
+  border: 1px solid #3e4451;
+  border-left: none;
+  border-radius: 0 3px 3px 0;
+  padding: 4px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #5a6374;
+  line-height: 1;
+}
+
+.toolbar-secret-toggle:hover,
+.toolbar-secret-toggle-active {
+  color: #abb2bf;
 }
 
 /* Editor container */

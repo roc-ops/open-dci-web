@@ -45,6 +45,17 @@ export function createToolbar(
   secretInput.placeholder = "CMTS Secret";
   secretInput.title = "CMTS shared-secret for MIC computation (optional)";
 
+  const secretToggle = document.createElement("button");
+  secretToggle.className = "toolbar-secret-toggle";
+  secretToggle.type = "button";
+  secretToggle.textContent = "\u{1F441}";
+  secretToggle.title = "Show/hide secret";
+  secretToggle.addEventListener("click", () => {
+    const hidden = secretInput.type === "password";
+    secretInput.type = hidden ? "text" : "password";
+    secretToggle.classList.toggle("toolbar-secret-toggle-active", hidden);
+  });
+
   const title = document.createElement("span");
   title.className = "toolbar-title";
   title.textContent = "OpenDCI Config Editor";
@@ -57,6 +68,7 @@ export function createToolbar(
   const secretGroup = document.createElement("div");
   secretGroup.className = "toolbar-group";
   secretGroup.appendChild(secretInput);
+  secretGroup.appendChild(secretToggle);
 
   const codecGroup = document.createElement("div");
   codecGroup.className = "toolbar-group";
