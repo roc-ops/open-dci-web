@@ -1,7 +1,7 @@
 /**
  * WASM-based encoder/decoder using the OpenDCI Go reference implementation.
  *
- * The Go WASM module exposes eight global functions:
+ * The Go WASM module exposes nine global functions:
  *   - opendciLoadSchema(string) -> {ok: true} | {error: string}
  *   - opendciDecode(Uint8Array, secret?) -> {result: string} | {error: string}
  *   - opendciEncode(string, secret?, pad?) -> {result: Uint8Array} | {error: string}
@@ -10,6 +10,7 @@
  *   - opendciQueryMIBTree() -> {result: string} | {error: string}
  *   - opendciResolveName(numericOid) -> {result: string} | {error: string}
  *   - opendciResolveOID(name) -> {result: string} | {error: string}
+ *   - opendciExtractCVC(Uint8Array) -> {result: ExtractCVCResult} | {error: string}
  */
 
 let wasmReady = false;
@@ -177,6 +178,15 @@ export interface EnumValue {
   label: string;
 }
 
+/** Index column from a SNMP table's INDEX clause. */
+export interface IndexObject {
+  name: string;
+  oid: string;
+  module: string;
+  syntax?: string;
+  description?: string;
+}
+
 /** Node in the MIB OID tree returned by queryMIBTree(). */
 export interface MIBTreeNode {
   oid: string;
@@ -186,6 +196,7 @@ export interface MIBTreeNode {
   syntax: string;
   access: string;
   nodeType: string;
+  indexes?: IndexObject[];
   enums?: EnumValue[];
   children?: MIBTreeNode[];
 }
@@ -232,6 +243,30 @@ export function resolveOID(name: string): string {
     throw new Error(result.error);
   }
   return result.result as string;
+}
+
+/** Result of extracting CVC certificates from a signed firmware file. */
+export interface ExtractCVCResult {
+  ManufacturerCvc: string | null;
+  CoSignerCvc: string | null;
+  ManufacturerCvcChain: string | null;
+  CoSignerCvcChain: string | null;
+}
+
+/**
+ * Extract CVC certificates from a signed cable modem firmware binary.
+ * Returns an object with certificate hex strings keyed by type.
+ * Fields not found in the firmware are null.
+ * Throws on error.
+ */
+export function extractCVC(firmware: Uint8Array): ExtractCVCResult {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { result?: ExtractCVCResult; error?: string } = (globalThis as any).opendciExtractCVC(firmware);
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.result as ExtractCVCResult;
 }
 
 /**
