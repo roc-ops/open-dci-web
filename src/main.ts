@@ -15,6 +15,7 @@ import { registerDiagnostics } from "./language/diagnostics";
 import { registerCommentUpdater } from "./language/comment-updater";
 import { registerAutoSuggest } from "./language/auto-suggest";
 import { registerSnmpMibCodeLens } from "./language/snmp-mib-codelens";
+import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
@@ -179,6 +180,9 @@ function main(): void {
 
   // 10. Register SNMP MIB CodeLens (Add/Edit buttons on SnmpMibObject arrays)
   registerSnmpMibCodeLens(editor, app);
+
+  // 10b. Register Chunked Hex CodeLens (Add/Edit buttons on chunked TLV properties)
+  registerChunkedHexCodeLens(editor, app);
 
   // 11. Detect PacketCable config type and update toolbar on content changes
   const updateConfigDetection = () => {

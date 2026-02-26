@@ -631,3 +631,143 @@ body {
 .mib-browser-detail-select {
   cursor: pointer;
 }
+
+/* Hex Input Modal */
+.hex-input-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.hex-input-modal {
+  background: #21252b;
+  border: 1px solid #333842;
+  border-radius: 6px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.hex-input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333842;
+  flex-shrink: 0;
+}
+
+.hex-input-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e9f0;
+}
+
+.hex-input-close {
+  background: none;
+  border: none;
+  color: #5a6374;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.hex-input-close:hover {
+  color: #e5e9f0;
+}
+
+.hex-input-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.hex-input-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a6374;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hex-input-select-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hex-input-select {
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid #3e4451;
+  border-radius: 3px;
+  background: #2c313a;
+  color: #abb2bf;
+  outline: none;
+  cursor: pointer;
+}
+
+.hex-input-select:focus {
+  border-color: #61afef;
+}
+
+.hex-input-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 10px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid #3e4451;
+  border-radius: 3px;
+  background: #1a1d23;
+  color: #abb2bf;
+  outline: none;
+  resize: vertical;
+  word-break: break-all;
+}
+
+.hex-input-textarea:focus {
+  border-color: #61afef;
+}
+
+.hex-input-textarea::placeholder {
+  color: #5a6374;
+}
+
+.hex-input-info {
+  font-size: 12px;
+  color: #5a6374;
+}
+
+.hex-input-error {
+  font-size: 12px;
+  color: #e06c75;
+}
+
+.hex-input-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #333842;
+  flex-shrink: 0;
+}
+
+.hex-input-save-btn {
+  min-width: 80px;
+}
+
+.hex-input-cancel-btn {
+  min-width: 80px;
+}
