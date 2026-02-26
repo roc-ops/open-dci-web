@@ -240,7 +240,6 @@ export function registerChunkedHexCodeLens(
     provideCodeLenses(model) {
       const text = model.getValue();
       const existing = findChunkedProperties(text);
-      const root = findRootObject(text);
       const lenses: monaco.languages.CodeLens[] = [];
 
       // "Edit" lens on each existing chunked property
@@ -270,36 +269,6 @@ export function registerChunkedHexCodeLens(
             command: {
               id: extractCommandId,
               title: "Extract from Firmware",
-            },
-          });
-        }
-      }
-
-      // "Add" lens on the root object's closing brace (if there are missing properties)
-      if (root) {
-        const existingNames = new Set(existing.map((p) => p.name));
-        const hasMissing = [...CHUNKED_PROPERTIES].some(
-          (n) => !existingNames.has(n),
-        );
-
-        if (hasMissing) {
-          const closingOffset = root.offset + root.length - 1;
-          const closingPos = model.getPositionAt(closingOffset);
-          lenses.push({
-            range: new monaco.Range(
-              closingPos.lineNumber,
-              1,
-              closingPos.lineNumber,
-              1,
-            ),
-            command: {
-              id: commandId,
-              title: "\uff0b Add Chunked TLV",
-              arguments: [
-                {
-                  mode: "add",
-                } as CodeLensCommandData,
-              ],
             },
           });
         }
