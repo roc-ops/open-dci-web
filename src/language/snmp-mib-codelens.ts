@@ -123,17 +123,18 @@ function extractEntryFields(node: Node): SnmpEntry | null {
  * (the SnmpMibObject key line).  Each entry is indented one level deeper.
  */
 function formatEntry(
-  entry: { oid: string; type: string; value: string },
+  entry: { oid: string; type: string; value: string; oidLabel?: string; enumLabel?: string },
   baseIndent: string,
 ): string {
   const inner = baseIndent + "  ";
-  const oidComment = resolveOidName(entry.oid);
-  const commentSuffix = oidComment ? ` // ${oidComment}` : "";
+  const oidComment = entry.oidLabel ?? resolveOidName(entry.oid);
+  const oidSuffix = oidComment ? ` // ${oidComment}` : "";
+  const enumSuffix = entry.enumLabel ? ` // ${entry.enumLabel}` : "";
   return [
     `${inner}{`,
-    `${inner}  "oid": "${entry.oid}",${commentSuffix}`,
+    `${inner}  "oid": "${entry.oid}",${oidSuffix}`,
     `${inner}  "type": "${entry.type}",`,
-    `${inner}  "value": "${entry.value}"`,
+    `${inner}  "value": "${entry.value}"${enumSuffix}`,
     `${inner}}`,
   ].join("\n");
 }
@@ -324,7 +325,7 @@ function detectIndent(
 function insertSnmpEntry(
   editor: monaco.editor.IStandaloneCodeEditor,
   data: CodeLensCommandData,
-  entry: { oid: string; type: string; value: string },
+  entry: { oid: string; type: string; value: string; oidLabel?: string; enumLabel?: string },
 ): void {
   const model = editor.getModel();
   if (!model) return;
@@ -384,7 +385,7 @@ function insertSnmpEntry(
 function updateSnmpEntry(
   editor: monaco.editor.IStandaloneCodeEditor,
   data: CodeLensCommandData,
-  entry: { oid: string; type: string; value: string },
+  entry: { oid: string; type: string; value: string; oidLabel?: string; enumLabel?: string },
 ): void {
   const model = editor.getModel();
   if (!model) return;

@@ -26,7 +26,7 @@ export interface MibBrowserOptions {
   existingOid?: string;
   existingType?: string;
   existingValue?: string;
-  onSave: (entry: { oid: string; type: string; value: string }) => void;
+  onSave: (entry: { oid: string; type: string; value: string; oidLabel?: string; enumLabel?: string }) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -307,7 +307,24 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     }
     const type = mapSyntaxToType(src.syntax);
     const value = useEnumSelect ? valueSelect.value : valueInput.value;
-    options.onSave({ oid, type, value });
+
+    // Build Net-SNMP style OID label: "MODULE::name" or "MODULE::name.index"
+    let oidLabel: string | undefined;
+    if (src.module && src.name) {
+      const suffix = oid.slice(src.oid.length); // e.g. ".1" or ""
+      oidLabel = `${src.module}::${src.name}${suffix}`;
+    }
+
+    // Find the matching enum label for the selected value
+    let enumLabel: string | undefined;
+    if (useEnumSelect && src.enums) {
+      const match = src.enums.find((e) => String(e.value) === value);
+      if (match) {
+        enumLabel = `${match.label}(${match.value})`;
+      }
+    }
+
+    options.onSave({ oid, type, value, oidLabel, enumLabel });
     close();
   });
 
