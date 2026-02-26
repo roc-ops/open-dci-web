@@ -18,6 +18,7 @@ interface DisplayTreeNode {
   label: string; // collapsed path (e.g., "iso.org.dod")
   isLeaf: boolean;
   source?: MIBTreeNode; // original data for leaves
+  collapsedSources?: MIBTreeNode[]; // intermediate nodes merged during collapse
   children: DisplayTreeNode[];
 }
 
@@ -87,6 +88,7 @@ function collapseTree(node: MIBTreeNode): DisplayTreeNode {
   // Merge single-child container chains
   let current = node;
   let label = current.name;
+  const collapsed: MIBTreeNode[] = [current];
 
   while (
     current.children &&
@@ -96,6 +98,7 @@ function collapseTree(node: MIBTreeNode): DisplayTreeNode {
   ) {
     current = current.children[0];
     label += "." + current.name;
+    collapsed.push(current);
   }
 
   const children = current.children!.map((c) => collapseTree(c));
@@ -104,6 +107,7 @@ function collapseTree(node: MIBTreeNode): DisplayTreeNode {
     oid: current.oid,
     label,
     isLeaf: false,
+    collapsedSources: collapsed,
     children,
   };
 }
@@ -386,8 +390,13 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   detailContent.appendChild(indexGroup);
   detailContent.appendChild(valueGroup);
 
+  const containerDetail = document.createElement("div");
+  containerDetail.className = "mib-browser-container-detail";
+  containerDetail.style.display = "none";
+
   detailPane.appendChild(detailEmpty);
   detailPane.appendChild(detailContent);
+  detailPane.appendChild(containerDetail);
 
   // --- Assemble modal ---
   modal.appendChild(header);
@@ -450,6 +459,86 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     }
   }
 
+  // --- Show container detail in the right pane ---
+  function showContainerDetail(node: DisplayTreeNode): void {
+    const sources = node.collapsedSources;
+    if (!sources || sources.length === 0) return;
+
+    // Determine if this is a table+row container
+    const tableSrc = sources.find((s) => s.nodeType === "table");
+    const rowSrc = sources.find((s) => s.nodeType === "row");
+    const isTableRow = !!(tableSrc && rowSrc);
+
+    // Determine if this is a scalar container (children are leaves, sources are "node" type)
+    const isScalarContainer =
+      !isTableRow &&
+      node.children.some((c) => c.isLeaf) &&
+      sources.some((s) => s.nodeType === "node" && s.description);
+
+    if (!isTableRow && !isScalarContainer) return;
+
+    // Clear leaf selection state
+    selectedLeaf = null;
+    saveBtn.disabled = true;
+
+    // Toggle visibility
+    detailEmpty.style.display = "none";
+    detailContent.style.display = "none";
+    containerDetail.style.display = "";
+    containerDetail.innerHTML = "";
+
+    if (isTableRow) {
+      // Table section
+      const tableSection = document.createElement("div");
+      tableSection.className = "mib-browser-container-section";
+      const tableName = document.createElement("div");
+      tableName.className = "mib-browser-container-name";
+      tableName.textContent = tableSrc.module
+        ? `${tableSrc.module}::${tableSrc.name}`
+        : tableSrc.name;
+      const tableDesc = document.createElement("div");
+      tableDesc.className = "mib-browser-container-desc";
+      tableDesc.textContent = tableSrc.description || "(no description)";
+      tableSection.appendChild(tableName);
+      tableSection.appendChild(tableDesc);
+      containerDetail.appendChild(tableSection);
+
+      // Row section
+      const rowSection = document.createElement("div");
+      rowSection.className = "mib-browser-container-section";
+      const rowName = document.createElement("div");
+      rowName.className = "mib-browser-container-name";
+      rowName.textContent = rowSrc.module
+        ? `${rowSrc.module}::${rowSrc.name}`
+        : rowSrc.name;
+      const rowDesc = document.createElement("div");
+      rowDesc.className = "mib-browser-container-desc";
+      rowDesc.textContent = rowSrc.description || "(no description)";
+      rowSection.appendChild(rowName);
+      rowSection.appendChild(rowDesc);
+      containerDetail.appendChild(rowSection);
+    } else {
+      // Scalar container — find the source with a description
+      const src = sources.find((s) => s.nodeType === "node" && s.description) || sources[0];
+      const section = document.createElement("div");
+      section.className = "mib-browser-container-section";
+      const name = document.createElement("div");
+      name.className = "mib-browser-container-name";
+      name.textContent = src.module ? `${src.module}::${src.name}` : src.name;
+      const desc = document.createElement("div");
+      desc.className = "mib-browser-container-desc";
+      desc.textContent = src.description || "(no description)";
+      section.appendChild(name);
+      section.appendChild(desc);
+      containerDetail.appendChild(section);
+    }
+
+    // Clear tree selection highlight
+    treePane.querySelectorAll(".mib-browser-tree-node-selected").forEach((el) => {
+      el.classList.remove("mib-browser-tree-node-selected");
+    });
+  }
+
   // --- Select a leaf node ---
   function selectLeaf(node: DisplayTreeNode): void {
     selectedLeaf = node;
@@ -457,6 +546,7 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
 
     detailEmpty.style.display = "none";
     detailContent.style.display = "";
+    containerDetail.style.display = "none";
 
     nameRow.value.textContent = src.module ? `${src.module}::${src.name}` : src.name;
     oidRow.value.textContent = src.oid;
@@ -575,6 +665,7 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
         } else {
           expandedOids.add(node.oid);
         }
+        showContainerDetail(node);
         renderTree();
       });
 

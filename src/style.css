@@ -632,6 +632,37 @@ body {
   cursor: pointer;
 }
 
+/* Container detail (table/row and scalar descriptions) */
+.mib-browser-container-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mib-browser-container-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mib-browser-container-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e5e9f0;
+}
+
+.mib-browser-container-desc {
+  white-space: pre-wrap;
+  font-size: 11px;
+  color: #abb2bf;
+  background: #1a1d23;
+  border: 1px solid #333842;
+  border-radius: 3px;
+  padding: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
 /* Hex Input Modal */
 .hex-input-backdrop {
   position: fixed;
