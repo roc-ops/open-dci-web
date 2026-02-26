@@ -7,7 +7,7 @@
  */
 
 import { queryMIBTree } from "../codec/index";
-import type { MIBTreeNode } from "../codec/index";
+import type { MIBTreeNode, IndexObject } from "../codec/index";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -212,6 +212,41 @@ function nodeHasMatch(node: DisplayTreeNode, matches: Set<string>): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// Index helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Walk the display tree to find the parent container of a leaf node,
+ * then check its collapsedSources for a row-type node and return its indexes.
+ * Returns the IndexObject array if found, or an empty array.
+ */
+function findRowIndexes(tree: DisplayTreeNode, leafOid: string): IndexObject[] {
+  function search(node: DisplayTreeNode): IndexObject[] | null {
+    if (node.isLeaf) return null;
+
+    for (const child of node.children) {
+      if (child.isLeaf && child.oid === leafOid) {
+        // This node is the direct parent of the target leaf.
+        // Check collapsedSources for a row node.
+        if (node.collapsedSources) {
+          const rowSrc = node.collapsedSources.find((s) => s.nodeType === "row");
+          if (rowSrc && rowSrc.indexes && rowSrc.indexes.length > 0) {
+            return rowSrc.indexes;
+          }
+        }
+        return null;
+      }
+      // Recurse into non-leaf children
+      const result = search(child);
+      if (result !== null) return result;
+    }
+    return null;
+  }
+
+  return search(tree) ?? [];
+}
+
+// ---------------------------------------------------------------------------
 // Modal UI
 // ---------------------------------------------------------------------------
 
@@ -305,9 +340,11 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     const src = selectedLeaf.source;
     let oid = src.oid;
     if (src.nodeType === "column") {
-      let idx = indexInput.value.trim();
-      if (idx && !idx.startsWith(".")) idx = "." + idx;
-      oid = oid + idx;
+      const parts = indexInputs.map((inp) => inp.value.trim()).filter((v) => v !== "");
+      if (parts.length > 0) {
+        const joined = parts.join(".");
+        oid = oid + (joined.startsWith(".") ? joined : "." + joined);
+      }
     }
     const type = mapSyntaxToType(src.syntax);
     const value = useEnumSelect ? valueSelect.value : valueInput.value;
@@ -348,19 +385,89 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   const descRow = createDetailRow("Description", true);
   const typeRow = createDetailRow("Type");
 
-  const indexGroup = document.createElement("div");
-  indexGroup.className = "mib-browser-detail-group";
-  indexGroup.style.display = "none";
-  const indexLabel = document.createElement("label");
-  indexLabel.className = "mib-browser-detail-label";
-  indexLabel.textContent = "Instance Index";
-  const indexInput = document.createElement("input");
-  indexInput.className = "mib-browser-detail-input";
-  indexInput.type = "text";
-  indexInput.placeholder = "e.g. .1 or 1";
-  indexInput.addEventListener("input", () => updateSaveState());
-  indexGroup.appendChild(indexLabel);
-  indexGroup.appendChild(indexInput);
+  const indexContainer = document.createElement("div");
+  indexContainer.className = "mib-browser-index-container";
+  indexContainer.style.display = "none";
+
+  /** Track current index input elements (one per index field). */
+  let indexInputs: HTMLInputElement[] = [];
+
+  /**
+   * Render index fields into the index container.
+   * When `indexes` has entries, one labeled input per IndexObject is created.
+   * Otherwise a single generic "Instance Index" input is shown.
+   */
+  function renderIndexFields(indexes: IndexObject[]): void {
+    indexContainer.innerHTML = "";
+    indexInputs = [];
+
+    if (indexes.length === 0) {
+      // Fallback: single generic input
+      const group = document.createElement("div");
+      group.className = "mib-browser-detail-group";
+      const lbl = document.createElement("label");
+      lbl.className = "mib-browser-detail-label";
+      lbl.textContent = "Instance Index";
+      const inp = document.createElement("input");
+      inp.className = "mib-browser-detail-input";
+      inp.type = "text";
+      inp.placeholder = "e.g. .1 or 1";
+      inp.addEventListener("input", () => updateSaveState());
+      group.appendChild(lbl);
+      group.appendChild(inp);
+      indexContainer.appendChild(group);
+      indexInputs.push(inp);
+      return;
+    }
+
+    for (const idx of indexes) {
+      const group = document.createElement("div");
+      group.className = "mib-browser-detail-group";
+
+      const labelRow = document.createElement("div");
+      labelRow.className = "mib-browser-index-label-row";
+
+      const lbl = document.createElement("label");
+      lbl.className = "mib-browser-detail-label";
+      lbl.textContent = idx.name;
+      labelRow.appendChild(lbl);
+
+      // Build tooltip text from available metadata
+      const tooltipParts: string[] = [];
+      if (idx.syntax) tooltipParts.push(`Syntax: ${idx.syntax}`);
+      if (idx.module) tooltipParts.push(`Module: ${idx.module}`);
+      if (idx.description) tooltipParts.push(idx.description);
+
+      if (tooltipParts.length > 0) {
+        const infoWrap = document.createElement("span");
+        infoWrap.className = "mib-browser-index-info";
+
+        const icon = document.createElement("span");
+        icon.className = "mib-browser-index-info-icon";
+        icon.textContent = "\u24d8"; // ⓘ
+
+        const tooltip = document.createElement("span");
+        tooltip.className = "mib-browser-index-tooltip";
+        tooltip.textContent = tooltipParts.join("\n");
+
+        infoWrap.appendChild(icon);
+        infoWrap.appendChild(tooltip);
+        labelRow.appendChild(infoWrap);
+      }
+
+      group.appendChild(labelRow);
+
+      const inp = document.createElement("input");
+      inp.className = "mib-browser-detail-input";
+      inp.type = "text";
+      inp.placeholder = idx.syntax ? `${idx.syntax}` : "index value";
+      inp.addEventListener("input", () => updateSaveState());
+      group.appendChild(inp);
+
+      indexContainer.appendChild(group);
+      indexInputs.push(inp);
+    }
+  }
 
   const valueGroup = document.createElement("div");
   valueGroup.className = "mib-browser-detail-group";
@@ -387,7 +494,7 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   detailContent.appendChild(oidRow.container);
   detailContent.appendChild(descRow.container);
   detailContent.appendChild(typeRow.container);
-  detailContent.appendChild(indexGroup);
+  detailContent.appendChild(indexContainer);
   detailContent.appendChild(valueGroup);
 
   const containerDetail = document.createElement("div");
@@ -554,10 +661,13 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     typeRow.value.textContent = mapSyntaxToType(src.syntax);
 
     if (src.nodeType === "column") {
-      indexGroup.style.display = "";
+      const indexes = tree ? findRowIndexes(tree, node.oid) : [];
+      renderIndexFields(indexes);
+      indexContainer.style.display = "";
     } else {
-      indexGroup.style.display = "none";
-      indexInput.value = "";
+      indexContainer.style.display = "none";
+      indexInputs = [];
+      indexContainer.innerHTML = "";
     }
 
     // Swap between freeform input and enum dropdown
@@ -725,9 +835,18 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     // Select the leaf
     selectLeaf(found);
 
-    // Pre-populate fields
+    // Pre-populate index fields
     if (instanceIndex) {
-      indexInput.value = instanceIndex;
+      if (indexInputs.length <= 1) {
+        // Single (or fallback) input: set the whole value
+        if (indexInputs[0]) indexInputs[0].value = instanceIndex;
+      } else {
+        // Multiple named inputs: distribute dot-split parts across fields
+        const idxParts = instanceIndex.split(".");
+        for (let i = 0; i < indexInputs.length && i < idxParts.length; i++) {
+          indexInputs[i].value = idxParts[i];
+        }
+      }
     }
     if (options.existingValue !== undefined) {
       if (useEnumSelect) {
