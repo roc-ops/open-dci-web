@@ -37,3 +37,26 @@ fs.writeFileSync(
 );
 console.log('Bundled ' + Object.keys(bundle).length + ' MIB files into public/mibs.json (' + Math.round(fs.statSync(path.join('$PROJECT_ROOT', 'public/mibs.json')).size / 1024) + ' KB)');
 "
+
+# Bundle vendor-specific schemas into a single JSON file for browser loading.
+node -e "
+const fs = require('fs');
+const path = require('path');
+
+const vendorDir = path.join('$PROJECT_ROOT', 'vendor/open-dci/schemas/vendors');
+const bundle = {};
+
+if (fs.existsSync(vendorDir)) {
+  for (const file of fs.readdirSync(vendorDir)) {
+    if (!file.endsWith('.jtd.json')) continue;
+    const filePath = path.join(vendorDir, file);
+    bundle[file] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  }
+}
+
+fs.writeFileSync(
+  path.join('$PROJECT_ROOT', 'public/vendor-schemas.json'),
+  JSON.stringify(bundle)
+);
+console.log('Bundled ' + Object.keys(bundle).length + ' vendor schemas into public/vendor-schemas.json');
+"

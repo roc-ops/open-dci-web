@@ -1,7 +1,7 @@
 /**
  * WASM-based encoder/decoder using the OpenDCI Go reference implementation.
  *
- * The Go WASM module exposes nine global functions:
+ * The Go WASM module exposes ten global functions:
  *   - opendciLoadSchema(string) -> {ok: true} | {error: string}
  *   - opendciDecode(Uint8Array, secret?) -> {result: string} | {error: string}
  *   - opendciEncode(string, secret?, pad?) -> {result: Uint8Array} | {error: string}
@@ -11,6 +11,7 @@
  *   - opendciResolveName(numericOid) -> {result: string} | {error: string}
  *   - opendciResolveOID(name) -> {result: string} | {error: string}
  *   - opendciExtractCVC(Uint8Array) -> {result: ExtractCVCResult} | {error: string}
+ *   - opendciLoadVendorSchema(string) -> {ok: true} | {error: string}
  */
 
 let wasmReady = false;
@@ -95,6 +96,32 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<Record<st
     }
   } catch (e) {
     console.warn("MIB loading failed (non-fatal):", e);
+  }
+
+  // Load vendor-specific schemas (optional, non-fatal).
+  try {
+    report("Loading vendor schemas\u2026");
+    const vendorResp = await fetch(`${base}vendor-schemas.json`);
+    if (vendorResp.ok) {
+      const vendorBundle: Record<string, unknown> = await vendorResp.json();
+      const vendorCount = Object.keys(vendorBundle).length;
+      if (vendorCount > 0) {
+        for (const [filename, schema] of Object.entries(vendorBundle)) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const loadResult: { ok?: boolean; error?: string } = (globalThis as any).opendciLoadVendorSchema(JSON.stringify(schema));
+            if (loadResult.error) {
+              console.warn(`Vendor schema ${filename} failed (non-fatal):`, loadResult.error);
+            }
+          } catch (e) {
+            console.warn(`Vendor schema ${filename} failed (non-fatal):`, e);
+          }
+        }
+        report(`Loaded ${vendorCount} vendor schema(s)`);
+      }
+    }
+  } catch (e) {
+    console.warn("Vendor schema loading failed (non-fatal):", e);
   }
 
   wasmReady = true;
@@ -267,6 +294,21 @@ export function extractCVC(firmware: Uint8Array): ExtractCVCResult {
     throw new Error(result.error);
   }
   return result.result as ExtractCVCResult;
+}
+
+/**
+ * Load a vendor-specific JTD schema into the WASM registry.
+ * Must be called after initWasm(). Can be called multiple times
+ * for different vendors.
+ * Throws on error.
+ */
+export function loadVendorSchema(schemaJSON: string): void {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: { ok?: boolean; error?: string } = (globalThis as any).opendciLoadVendorSchema(schemaJSON);
+  if (result.error) {
+    throw new Error(result.error);
+  }
 }
 
 /**
