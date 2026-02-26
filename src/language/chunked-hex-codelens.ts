@@ -9,6 +9,9 @@
 import * as monaco from "monaco-editor";
 import { parseTree, type Node } from "jsonc-parser";
 import { showHexInput } from "../ui/hex-input";
+import { pickFirmwareFile } from "../file/pick-firmware";
+import { showCvcExtractResult, type CvcFieldInfo } from "../ui/cvc-extract-result";
+import { extractCVC, isReady } from "../codec/index";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -25,6 +28,14 @@ const CHUNKED_PROPERTIES = new Set([
   "Estb",
   "Edva",
   "Esg",
+]);
+
+/** The subset of chunked properties that are CVC certificates extractable from firmware. */
+const CVC_PROPERTIES = new Set([
+  "ManufacturerCvc",
+  "CoSignerCvc",
+  "ManufacturerCvcChain",
+  "CoSignerCvcChain",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -59,7 +70,7 @@ interface CodeLensCommandData {
 /**
  * Parse the editor text and return all top-level chunked TLV properties found.
  */
-function findChunkedProperties(text: string): ChunkedProperty[] {
+export function findChunkedProperties(text: string): ChunkedProperty[] {
   const root = parseTree(text, undefined, {
     allowTrailingComma: true,
     disallowComments: false,
@@ -167,6 +178,64 @@ export function registerChunkedHexCodeLens(
     return { dispose() {} };
   }
 
+  // Allocate a second command for CVC extraction from firmware.
+  const extractCommandId = editor.addCommand(
+    0,
+    async () => {
+      if (!isReady()) {
+        alert("WASM codec is not ready yet. Please wait for initialization to complete.");
+        return;
+      }
+
+      let firmware: Uint8Array;
+      try {
+        firmware = await pickFirmwareFile();
+      } catch {
+        // User cancelled the file picker — silently ignore.
+        return;
+      }
+
+      try {
+        const result = extractCVC(firmware);
+
+        // Check if any certificates were found
+        const hasAny =
+          result.ManufacturerCvc ||
+          result.CoSignerCvc ||
+          result.ManufacturerCvcChain ||
+          result.CoSignerCvcChain;
+
+        if (!hasAny) {
+          alert("No CVC certificates found in the selected firmware file.");
+          return;
+        }
+
+        // Determine which properties already exist in the document
+        const model = editor.getModel();
+        if (!model) return;
+        const text = model.getValue();
+        const existingProps = findChunkedProperties(text);
+        const existingNames = new Set(existingProps.map((p) => p.name));
+
+        // Show confirmation modal
+        showCvcExtractResult(container, {
+          result,
+          existingNames,
+          onApply: (fields) => {
+            applyCvcExtraction(editor, fields);
+          },
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        alert(`Failed to extract CVC certificates:\n${message}`);
+      }
+    },
+  );
+
+  if (extractCommandId === null) {
+    return { dispose() {} };
+  }
+
   const provider = monaco.languages.registerCodeLensProvider("json", {
     provideCodeLenses(model) {
       const text = model.getValue();
@@ -193,6 +262,17 @@ export function registerChunkedHexCodeLens(
             ],
           },
         });
+
+        // "Extract from Firmware" lens on CVC-specific properties
+        if (CVC_PROPERTIES.has(prop.name)) {
+          lenses.push({
+            range: new monaco.Range(pos.lineNumber, 1, pos.lineNumber, 1),
+            command: {
+              id: extractCommandId,
+              title: "Extract from Firmware",
+            },
+          });
+        }
       }
 
       // "Add" lens on the root object's closing brace (if there are missing properties)
@@ -347,4 +427,62 @@ function updateChunkedProperty(
       text: `"${newValue}"`,
     },
   ]);
+}
+
+// ---------------------------------------------------------------------------
+// CVC extraction apply
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply extracted CVC certificate fields to the editor document.
+ *
+ * For fields that already exist, their values are batch-updated via a single
+ * applyEdits call.  New fields are then inserted sequentially (each insertion
+ * changes offsets, so we re-parse between inserts).
+ */
+function applyCvcExtraction(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  fields: CvcFieldInfo[],
+): void {
+  const model = editor.getModel();
+  if (!model) return;
+
+  // --- Phase 1: batch-update existing fields ---
+  const text = model.getValue();
+  const existingProps = findChunkedProperties(text);
+  const propByName = new Map(existingProps.map((p) => [p.name, p]));
+
+  const edits: monaco.editor.IIdentifiedSingleEditOperation[] = [];
+  const fieldsToInsert: CvcFieldInfo[] = [];
+
+  for (const field of fields) {
+    const existing = propByName.get(field.name);
+    if (existing) {
+      const startPos = model.getPositionAt(existing.valueNode.offset);
+      const endPos = model.getPositionAt(
+        existing.valueNode.offset + existing.valueNode.length,
+      );
+      edits.push({
+        range: new monaco.Range(
+          startPos.lineNumber,
+          startPos.column,
+          endPos.lineNumber,
+          endPos.column,
+        ),
+        text: `"${field.hexValue}"`,
+      });
+    } else {
+      fieldsToInsert.push(field);
+    }
+  }
+
+  if (edits.length > 0) {
+    model.applyEdits(edits);
+  }
+
+  // --- Phase 2: sequentially insert new fields ---
+  // Each insertion changes document offsets, so we insert one at a time.
+  for (const field of fieldsToInsert) {
+    insertChunkedProperty(editor, field.name, field.hexValue);
+  }
 }

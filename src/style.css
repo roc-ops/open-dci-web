@@ -802,3 +802,121 @@ body {
 .hex-input-cancel-btn {
   min-width: 80px;
 }
+
+/* CVC Extract Result Modal */
+.cvc-extract-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.cvc-extract-modal {
+  background: #21252b;
+  border: 1px solid #333842;
+  border-radius: 6px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cvc-extract-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333842;
+  flex-shrink: 0;
+}
+
+.cvc-extract-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e9f0;
+}
+
+.cvc-extract-close {
+  background: none;
+  border: none;
+  color: #5a6374;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.cvc-extract-close:hover {
+  color: #e5e9f0;
+}
+
+.cvc-extract-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.cvc-extract-description {
+  font-size: 12px;
+  color: #5a6374;
+}
+
+.cvc-extract-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cvc-extract-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #1a1d23;
+  border: 1px solid #333842;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.cvc-extract-field-name {
+  font-weight: 600;
+  color: #e5e9f0;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.cvc-extract-field-bytes {
+  color: #5a6374;
+  flex-shrink: 0;
+}
+
+.cvc-extract-field-replace {
+  margin-left: auto;
+  font-size: 11px;
+  color: #e5c07b;
+  flex-shrink: 0;
+}
+
+.cvc-extract-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #333842;
+  flex-shrink: 0;
+}
+
+.cvc-extract-apply-btn {
+  min-width: 80px;
+}
+
+.cvc-extract-cancel-btn {
+  min-width: 80px;
+}
