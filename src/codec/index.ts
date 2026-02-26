@@ -4,5 +4,5 @@
  */
 
 export type { Encoder, Decoder } from "./types.js";
-export type { ProgressCallback, MIBTreeNode, IndexObject, EnumValue, PacketCableVariant, ExtractCVCResult } from "./wasm-codec.js";
+export type { ProgressCallback, InitResult, MIBTreeNode, IndexObject, EnumValue, PacketCableVariant, ExtractCVCResult } from "./wasm-codec.js";
 export { initWasm, encode, decode, isReady, loadMIBs, resetMIBs, queryMIBTree, resolveName, resolveOID, extractCVC, loadVendorSchema } from "./wasm-codec.js";

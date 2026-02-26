@@ -20,6 +20,7 @@ import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
 import { initMibState, showMibModal } from "./ui/mib-manager";
+import { initVendorSchemaState, showVendorSchemaModal } from "./ui/vendor-schema-manager";
 import { openFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
@@ -161,6 +162,9 @@ function main(): void {
     onMibManager: () => {
       showMibModal(app);
     },
+    onVendorSchemaManager: () => {
+      showVendorSchemaModal(app);
+    },
   });
 
   // Editor container
@@ -199,10 +203,11 @@ function main(): void {
   // 12. Initialize WASM codec with loading overlay
   const loading = createLoadingOverlay(app);
   initWasm((msg) => loading.setMessage(msg))
-    .then((mibBundle) => {
+    .then(({ mibBundle, vendorSchemaBundle }) => {
       loading.dismiss();
       setCodecReady(true);
       initMibState(mibBundle);
+      initVendorSchemaState(vendorSchemaBundle);
     })
     .catch((err) => {
       console.error("Failed to initialize WASM codec:", err);

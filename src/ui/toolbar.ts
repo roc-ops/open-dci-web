@@ -9,6 +9,7 @@ export interface ToolbarCallbacks {
   onEncode: () => void;
   onDecode: () => void;
   onMibManager: () => void;
+  onVendorSchemaManager: () => void;
 }
 
 export interface ToolbarResult {
@@ -39,10 +40,12 @@ export function createToolbar(
   const encodeBtn = createButton("Encode", callbacks.onEncode, true);
   const decodeBtn = createButton("Decode", callbacks.onDecode, true);
   const mibsBtn = createButton("MIBs", callbacks.onMibManager, true);
+  const vendorsBtn = createButton("Vendors", callbacks.onVendorSchemaManager, true);
 
   encodeBtn.title = "WASM codec is loading\u2026";
   decodeBtn.title = "WASM codec is loading\u2026";
   mibsBtn.title = "WASM codec is loading\u2026";
+  vendorsBtn.title = "WASM codec is loading\u2026";
 
   const secretInput = document.createElement("input");
   secretInput.type = "password";
@@ -117,6 +120,7 @@ export function createToolbar(
   const mibGroup = document.createElement("div");
   mibGroup.className = "toolbar-group";
   mibGroup.appendChild(mibsBtn);
+  mibGroup.appendChild(vendorsBtn);
 
   toolbar.appendChild(title);
   toolbar.appendChild(fileGroup);
@@ -130,10 +134,12 @@ export function createToolbar(
     encodeBtn.disabled = !ready;
     decodeBtn.disabled = !ready;
     mibsBtn.disabled = !ready;
+    vendorsBtn.disabled = !ready;
     if (ready) {
       encodeBtn.title = "";
       decodeBtn.title = "";
       mibsBtn.title = "";
+      vendorsBtn.title = "";
     } else {
       const msg = error
         ? `WASM codec failed to load: ${error}`
@@ -141,6 +147,7 @@ export function createToolbar(
       encodeBtn.title = msg;
       decodeBtn.title = msg;
       mibsBtn.title = msg;
+      vendorsBtn.title = msg;
     }
   }
 

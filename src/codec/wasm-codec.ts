@@ -18,6 +18,12 @@ let wasmReady = false;
 
 export type ProgressCallback = (message: string) => void;
 
+/** Result of WASM initialization — bundles loaded during startup. */
+export interface InitResult {
+  mibBundle: Record<string, string>;
+  vendorSchemaBundle: Record<string, unknown>;
+}
+
 /**
  * Initialize the WASM runtime. Must be called before encode/decode.
  * Loads wasm_exec.js, the compiled WASM binary, then starts the Go runtime,
@@ -25,8 +31,8 @@ export type ProgressCallback = (message: string) => void;
  *
  * @param onProgress - optional callback invoked with status messages during init
  */
-export async function initWasm(onProgress?: ProgressCallback): Promise<Record<string, string>> {
-  if (wasmReady) return {};
+export async function initWasm(onProgress?: ProgressCallback): Promise<InitResult> {
+  if (wasmReady) return { mibBundle: {}, vendorSchemaBundle: {} };
 
   const base = import.meta.env.BASE_URL;
   const report = onProgress ?? (() => {});
@@ -99,14 +105,15 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<Record<st
   }
 
   // Load vendor-specific schemas (optional, non-fatal).
+  let vendorSchemaBundle: Record<string, unknown> = {};
   try {
     report("Loading vendor schemas\u2026");
     const vendorResp = await fetch(`${base}vendor-schemas.json`);
     if (vendorResp.ok) {
-      const vendorBundle: Record<string, unknown> = await vendorResp.json();
-      const vendorCount = Object.keys(vendorBundle).length;
+      vendorSchemaBundle = await vendorResp.json();
+      const vendorCount = Object.keys(vendorSchemaBundle).length;
       if (vendorCount > 0) {
-        for (const [filename, schema] of Object.entries(vendorBundle)) {
+        for (const [filename, schema] of Object.entries(vendorSchemaBundle)) {
           try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const loadResult: { ok?: boolean; error?: string } = (globalThis as any).opendciLoadVendorSchema(JSON.stringify(schema));
@@ -125,7 +132,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<Record<st
   }
 
   wasmReady = true;
-  return mibBundle;
+  return { mibBundle, vendorSchemaBundle };
 }
 
 /**
