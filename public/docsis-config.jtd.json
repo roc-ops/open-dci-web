@@ -47,30 +47,6 @@
         }
       }
     },
-    "SnmpWriteAccessEntry": {
-      "metadata": {
-        "description": "A single SNMP write-access control entry: an OID subtree with an access flag. Corresponds to TLV 10 which carries a BER-encoded OID followed by a 1-byte access flag in the binary config file.",
-        "spec": "CM-SP-MULPIv4.0 C.1.2.4"
-      },
-      "properties": {
-        "oid": {
-          "metadata": {
-            "description": "SNMP object identifier subtree in dotted-decimal notation",
-            "dataType": "oid",
-            "spec": "CM-SP-MULPIv4.0 C.1.2.4"
-          },
-          "type": "string"
-        },
-        "access": {
-          "metadata": {
-            "description": "Write access flag: 0 = deny, 1 = allow",
-            "spec": "CM-SP-MULPIv4.0 C.1.2.4"
-          },
-          "type": "uint8",
-          "enum": [0, 1]
-        }
-      }
-    },
     "ServiceFlowErrorEntry": {
       "metadata": {
         "description": "Service Flow Error Encoding reported when a service flow parameter is rejected",
@@ -6008,15 +5984,12 @@
     },
     "SnmpWriteAccessControl": {
       "metadata": {
-        "description": "SNMP write access control: grants or denies SNMP SET access to OID subtrees. Each entry is a BER-encoded OID followed by a 1-byte access flag in the binary config file.",
+        "description": "SNMP write access control encoding",
         "tlvType": 10,
-        "dataType": "compound",
-        "repeatable": true,
+        "dataType": "hexstring",
         "spec": "CM-SP-MULPIv4.0 C.1.2.4"
       },
-      "elements": {
-        "ref": "SnmpWriteAccessEntry"
-      }
+      "type": "string"
     },
     "SnmpMibObject": {
       "metadata": {
@@ -6178,7 +6151,6 @@
         "description": "Manufacturer Code Verification Certificate",
         "tlvType": 32,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-MULPIv4.0 C.1.2.10"
       },
       "type": "string"
@@ -6188,7 +6160,6 @@
         "description": "Co-Signer Code Verification Certificate",
         "tlvType": 33,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-MULPIv4.0 C.1.2.11"
       },
       "type": "string"
@@ -6562,7 +6533,6 @@
         "description": "Manufacturer CVC Chain",
         "tlvType": 81,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-MULPIv4.0 C.1.2.21"
       },
       "type": "string"
@@ -6572,7 +6542,6 @@
         "description": "Co-signer CVC Chain",
         "tlvType": 82,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-MULPIv4.0 C.1.2.22"
       },
       "type": "string"
@@ -6737,7 +6706,6 @@
         "description": "ePS (eSAFE Power Supply) configuration - opaque eSAFE encoding",
         "tlvType": 201,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-eDOCSIS-I31 5.2.8.1"
       },
       "type": "string"
@@ -6759,7 +6727,6 @@
         "description": "eMTA (Embedded Multimedia Terminal Adapter) configuration - opaque eSAFE encoding",
         "tlvType": 216,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "PKT-SP-PROV1.5-C01 9.1"
       },
       "type": "string"
@@ -6769,7 +6736,6 @@
         "description": "eSTB (Embedded Set-Top Box) configuration - opaque eSAFE encoding",
         "tlvType": 217,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-eDOCSIS-I31 5.2.8.1, CM-SP-DSG-I25"
       },
       "type": "string"
@@ -6791,7 +6757,6 @@
         "description": "eDVA (Embedded Digital Voice Adapter) configuration - opaque eSAFE encoding",
         "tlvType": 220,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-eDOCSIS-I31 5.2.8.1, PKT-SP-RST-E-DVA-C01"
       },
       "type": "string"
@@ -6801,7 +6766,6 @@
         "description": "eSG (Embedded Service Gateway) configuration - opaque eSAFE encoding",
         "tlvType": 221,
         "dataType": "hexstring",
-        "chunked": true,
         "spec": "CM-SP-eDOCSIS-I31 5.2.8.1"
       },
       "type": "string"

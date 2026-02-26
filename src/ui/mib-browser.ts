@@ -306,7 +306,7 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
       oid = oid + idx;
     }
     const type = mapSyntaxToType(src.syntax);
-    const value = valueInput.value;
+    const value = useEnumSelect ? valueSelect.value : valueInput.value;
     options.onSave({ oid, type, value });
     close();
   });
@@ -351,8 +351,16 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   valueInput.type = "text";
   valueInput.placeholder = "Enter value\u2026";
   valueInput.addEventListener("input", () => updateSaveState());
+  const valueSelect = document.createElement("select");
+  valueSelect.className = "mib-browser-detail-input mib-browser-detail-select";
+  valueSelect.style.display = "none";
+  valueSelect.addEventListener("change", () => updateSaveState());
   valueGroup.appendChild(valueLabel);
   valueGroup.appendChild(valueInput);
+  valueGroup.appendChild(valueSelect);
+
+  /** Track whether the current leaf uses the enum dropdown. */
+  let useEnumSelect = false;
 
   detailContent.appendChild(nameRow.container);
   detailContent.appendChild(oidRow.container);
@@ -408,7 +416,9 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
 
   // --- Update save button state ---
   function updateSaveState(): void {
-    const hasValue = valueInput.value.trim().length > 0;
+    const hasValue = useEnumSelect
+      ? valueSelect.value !== ""
+      : valueInput.value.trim().length > 0;
     saveBtn.disabled = !selectedLeaf || !hasValue;
   }
 
@@ -441,6 +451,27 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     } else {
       indexGroup.style.display = "none";
       indexInput.value = "";
+    }
+
+    // Swap between freeform input and enum dropdown
+    if (src.enums && src.enums.length > 0) {
+      useEnumSelect = true;
+      valueInput.style.display = "none";
+      valueSelect.style.display = "";
+      valueSelect.innerHTML = "";
+      for (const e of src.enums) {
+        const opt = document.createElement("option");
+        opt.value = String(e.value);
+        opt.textContent = `${e.value} (${e.label})`;
+        valueSelect.appendChild(opt);
+      }
+      // Pre-select first option
+      valueSelect.selectedIndex = 0;
+    } else {
+      useEnumSelect = false;
+      valueInput.style.display = "";
+      valueSelect.style.display = "none";
+      valueInput.value = "";
     }
 
     // In edit mode, pre-populate if matching
@@ -591,7 +622,11 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
       indexInput.value = instanceIndex;
     }
     if (options.existingValue !== undefined) {
-      valueInput.value = options.existingValue;
+      if (useEnumSelect) {
+        valueSelect.value = options.existingValue;
+      } else {
+        valueInput.value = options.existingValue;
+      }
     }
 
     updateSaveState();

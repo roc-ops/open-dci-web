@@ -171,6 +171,12 @@ export function resetMIBs(): void {
   }
 }
 
+/** Named integer value from a MIB object's SYNTAX enum clause. */
+export interface EnumValue {
+  value: number;
+  label: string;
+}
+
 /** Node in the MIB OID tree returned by queryMIBTree(). */
 export interface MIBTreeNode {
   oid: string;
@@ -180,6 +186,7 @@ export interface MIBTreeNode {
   syntax: string;
   access: string;
   nodeType: string;
+  enums?: EnumValue[];
   children?: MIBTreeNode[];
 }
 

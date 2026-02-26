@@ -627,3 +627,7 @@ body {
 .mib-browser-detail-input::placeholder {
   color: #5a6374;
 }
+
+.mib-browser-detail-select {
+  cursor: pointer;
+}
