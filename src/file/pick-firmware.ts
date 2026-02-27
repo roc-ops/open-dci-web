@@ -4,21 +4,30 @@
  * hidden <input type="file"> fallback (same dual-path approach as
  * src/file/open.ts).
  *
- * Returns the raw firmware bytes as a Uint8Array.
+ * Returns the raw firmware bytes as a Uint8Array along with the
+ * original filename.
  */
+
+/** Result of picking a firmware file. */
+export interface FirmwarePickResult {
+  /** Raw firmware bytes. */
+  data: Uint8Array;
+  /** Original filename (e.g. "firmware.bin"). */
+  name: string;
+}
 
 /**
  * Open a file picker restricted to firmware-type files and return the
- * selected file's contents as a Uint8Array.
+ * selected file's contents as a Uint8Array along with the filename.
  */
-export async function pickFirmwareFile(): Promise<Uint8Array> {
+export async function pickFirmwareFile(): Promise<FirmwarePickResult> {
   if ("showOpenFilePicker" in window) {
     return pickWithFilePicker();
   }
   return pickWithInput();
 }
 
-async function pickWithFilePicker(): Promise<Uint8Array> {
+async function pickWithFilePicker(): Promise<FirmwarePickResult> {
   const [handle] = await (
     window as unknown as {
       showOpenFilePicker: (
@@ -37,10 +46,10 @@ async function pickWithFilePicker(): Promise<Uint8Array> {
 
   const file = await handle.getFile();
   const buffer = await file.arrayBuffer();
-  return new Uint8Array(buffer);
+  return { data: new Uint8Array(buffer), name: file.name };
 }
 
-function pickWithInput(): Promise<Uint8Array> {
+function pickWithInput(): Promise<FirmwarePickResult> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -56,7 +65,7 @@ function pickWithInput(): Promise<Uint8Array> {
         return;
       }
       const buffer = await file.arrayBuffer();
-      resolve(new Uint8Array(buffer));
+      resolve({ data: new Uint8Array(buffer), name: file.name });
     });
 
     input.addEventListener("cancel", () => {

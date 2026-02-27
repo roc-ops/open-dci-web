@@ -30,8 +30,10 @@ export interface CvcExtractResultOptions {
   result: ExtractCVCResult;
   /** Set of property names already present in the document. */
   existingNames: Set<string>;
-  /** Called when the user clicks Apply. */
-  onApply: (fields: CvcFieldInfo[]) => void;
+  /** Original firmware filename (e.g. "firmware.bin"). */
+  firmwareFilename?: string;
+  /** Called when the user clicks Apply.  Receives the firmware filename so the caller can set SwUpgradeFilename. */
+  onApply: (fields: CvcFieldInfo[], firmwareFilename?: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +146,15 @@ export function showCvcExtractResult(
 
   body.appendChild(list);
 
+  // SwUpgradeFilename notice
+  if (options.firmwareFilename) {
+    const filenameNotice = document.createElement("div");
+    filenameNotice.className = "cvc-extract-filename-notice";
+    filenameNotice.textContent =
+      `SwUpgradeFilename will be set to: ${options.firmwareFilename}`;
+    body.appendChild(filenameNotice);
+  }
+
   // --- Footer ---
   const footer = document.createElement("div");
   footer.className = "cvc-extract-footer";
@@ -157,7 +168,7 @@ export function showCvcExtractResult(
   applyBtn.className = "toolbar-btn cvc-extract-apply-btn";
   applyBtn.textContent = "Apply";
   applyBtn.addEventListener("click", () => {
-    options.onApply(fields);
+    options.onApply(fields, options.firmwareFilename);
     close();
   });
 

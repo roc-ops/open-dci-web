@@ -118,6 +118,50 @@ function findRootObject(text: string): Node | null {
   return root;
 }
 
+/** A top-level string property found in the JSON document. */
+interface StringProperty {
+  /** AST node for the entire property (key + value). */
+  propertyNode: Node;
+  /** AST node for the value (the string). */
+  valueNode: Node;
+  /** The current string value. */
+  value: string;
+}
+
+/**
+ * Find a single top-level string property by name in the document.
+ * Returns `null` if the property is not found or is not a string.
+ */
+function findStringProperty(text: string, propertyName: string): StringProperty | null {
+  const root = parseTree(text, undefined, {
+    allowTrailingComma: true,
+    disallowComments: false,
+  });
+  if (!root || root.type !== "object" || !root.children) return null;
+
+  for (const prop of root.children) {
+    if (prop.type !== "property" || !prop.children || prop.children.length < 2)
+      continue;
+
+    const keyNode = prop.children[0];
+    const valueNode = prop.children[1];
+
+    if (
+      keyNode.type === "string" &&
+      keyNode.value === propertyName &&
+      valueNode.type === "string"
+    ) {
+      return {
+        propertyNode: prop,
+        valueNode,
+        value: valueNode.value ?? "",
+      };
+    }
+  }
+
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -190,16 +234,19 @@ export function registerChunkedHexCodeLens(
         return;
       }
 
-      let firmware: Uint8Array;
+      let firmwareData: Uint8Array;
+      let firmwareName: string;
       try {
-        firmware = await pickFirmwareFile();
+        const picked = await pickFirmwareFile();
+        firmwareData = picked.data;
+        firmwareName = picked.name;
       } catch {
         // User cancelled the file picker — silently ignore.
         return;
       }
 
       try {
-        const result = extractCVC(firmware);
+        const result = extractCVC(firmwareData);
 
         // Drop chain fields that contain only a single certificate —
         // they duplicate the corresponding CVC field.
@@ -220,7 +267,9 @@ export function registerChunkedHexCodeLens(
           result.CoSignerCvcChain;
 
         if (!hasAny) {
-          showToast("No CVC certificates were found in the selected firmware file.", "info");
+          // No CVCs found — still set SwUpgradeFilename with the firmware name
+          applyCvcExtraction(editor, [], firmwareName);
+          showToast("No CVC certificates were found in the selected firmware file. SwUpgradeFilename has been set.", "info");
           return;
         }
 
@@ -235,8 +284,9 @@ export function registerChunkedHexCodeLens(
         showCvcExtractResult(container, {
           result,
           existingNames,
-          onApply: (fields) => {
-            applyCvcExtraction(editor, fields);
+          firmwareFilename: firmwareName,
+          onApply: (fields, filename) => {
+            applyCvcExtraction(editor, fields, filename);
           },
         });
       } catch (err) {
@@ -324,6 +374,19 @@ export function registerChunkedHexCodeLens(
             });
           }
         }
+      }
+
+      // "Extract from Firmware" lens on SwUpgradeFilename (top-level string property)
+      const swUpgrade = findStringProperty(text, "SwUpgradeFilename");
+      if (swUpgrade) {
+        const pos = model.getPositionAt(swUpgrade.propertyNode.offset);
+        lenses.push({
+          range: new monaco.Range(pos.lineNumber, 1, pos.lineNumber, 1),
+          command: {
+            id: extractCommandId,
+            title: "Extract from Firmware",
+          },
+        });
       }
 
       return { lenses, dispose() {} };
@@ -460,15 +523,19 @@ function updateChunkedProperty(
  * For fields that already exist, their values are batch-updated via a single
  * applyEdits call.  New fields are then inserted sequentially (each insertion
  * changes offsets, so we re-parse between inserts).
+ *
+ * When `firmwareFilename` is provided, also sets (or inserts)
+ * the `SwUpgradeFilename` property to the firmware's original filename.
  */
 function applyCvcExtraction(
   editor: monaco.editor.IStandaloneCodeEditor,
   fields: CvcFieldInfo[],
+  firmwareFilename?: string,
 ): void {
   const model = editor.getModel();
   if (!model) return;
 
-  // --- Phase 1: batch-update existing fields ---
+  // --- Phase 1: batch-update existing CVC fields ---
   const text = model.getValue();
   const existingProps = findChunkedProperties(text);
   const propByName = new Map(existingProps.map((p) => [p.name, p]));
@@ -497,13 +564,43 @@ function applyCvcExtraction(
     }
   }
 
+  // Also batch-update SwUpgradeFilename if it already exists
+  if (firmwareFilename) {
+    const swUpgrade = findStringProperty(text, "SwUpgradeFilename");
+    if (swUpgrade) {
+      const startPos = model.getPositionAt(swUpgrade.valueNode.offset);
+      const endPos = model.getPositionAt(
+        swUpgrade.valueNode.offset + swUpgrade.valueNode.length,
+      );
+      edits.push({
+        range: new monaco.Range(
+          startPos.lineNumber,
+          startPos.column,
+          endPos.lineNumber,
+          endPos.column,
+        ),
+        text: `"${firmwareFilename}"`,
+      });
+    }
+  }
+
   if (edits.length > 0) {
     model.applyEdits(edits);
   }
 
-  // --- Phase 2: sequentially insert new fields ---
+  // --- Phase 2: sequentially insert new CVC fields ---
   // Each insertion changes document offsets, so we insert one at a time.
   for (const field of fieldsToInsert) {
     insertChunkedProperty(editor, field.name, field.hexValue);
+  }
+
+  // --- Phase 3: insert SwUpgradeFilename if it didn't already exist ---
+  if (firmwareFilename) {
+    // Re-check after edits — it may have been inserted above or already existed.
+    const updatedText = model.getValue();
+    const swUpgrade = findStringProperty(updatedText, "SwUpgradeFilename");
+    if (!swUpgrade) {
+      insertChunkedProperty(editor, "SwUpgradeFilename", firmwareFilename);
+    }
   }
 }
