@@ -89,22 +89,24 @@ function extractMergedMeta(root: SchemaNode, node: SchemaNode, resolved: SchemaN
  * Computes the absolute TLV path by combining a parent's absolute TLV
  * with a child's (possibly relative) TLV type.
  *
- * Handles overlapping prefixes: e.g., parent "24.43" + child "43.5" → "24.43.5"
- * (the child's "43" overlaps with the parent's last segment).
+ * Handles multi-segment overlapping prefixes:
+ *   parent "24.43" + child "43.5"   → "24.43.5"   (1-segment overlap)
+ *   parent "24.43.5" + child "43.5.1" → "24.43.5.1" (2-segment overlap)
  */
 function computeAbsoluteTlv(parentAbsTlv: string | undefined, relTlv: string | number): string {
   const rel = String(relTlv);
   if (!parentAbsTlv) return rel;
 
-  const lastDot = parentAbsTlv.lastIndexOf(".");
-  const lastSeg = lastDot >= 0 ? parentAbsTlv.slice(lastDot + 1) : parentAbsTlv;
-
-  // If child starts with parent's last segment + ".", it includes parent context
-  if (rel.startsWith(lastSeg + ".")) {
-    return parentAbsTlv + rel.slice(lastSeg.length);
+  // Try progressively shorter suffixes of the parent path (longest first)
+  const parentParts = parentAbsTlv.split(".");
+  for (let i = 0; i < parentParts.length; i++) {
+    const suffix = parentParts.slice(i).join(".");
+    if (rel.startsWith(suffix + ".")) {
+      return parentAbsTlv + rel.slice(suffix.length);
+    }
   }
 
-  // Otherwise append as a sub-TLV
+  // No overlap — append as a sub-TLV
   return parentAbsTlv + "." + rel;
 }
 
