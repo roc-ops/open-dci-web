@@ -422,13 +422,17 @@ function detectIndent(
 }
 
 /**
- * Insert a new chunked property before the root object's closing `}`.
- * Handles comma placement: adds a comma after the last existing property.
+ * Insert a new property into the root object.
+ *
+ * When `afterPropertyName` is given and that property exists, the new
+ * property is inserted immediately after it (for logical grouping).
+ * Otherwise the new property is appended before the closing `}`.
  */
 function insertChunkedProperty(
   editor: monaco.editor.IStandaloneCodeEditor,
   name: string,
   value: string,
+  afterPropertyName?: string,
 ): void {
   const model = editor.getModel();
   if (!model) return;
@@ -456,32 +460,56 @@ function insertChunkedProperty(
         text: replacement,
       },
     ]);
-  } else {
-    // Find the last property and add a comma after it, then insert new property
-    const lastProp = root.children[root.children.length - 1];
-    const lastPropEnd = lastProp.offset + lastProp.length;
-    const lastPropEndPos = model.getPositionAt(lastPropEnd);
-
-    // Check if there's already a comma after the last property
-    const afterLastProp = text.substring(lastPropEnd, lastPropEnd + 20);
-    const hasComma = /^\s*,/.test(afterLastProp);
-
-    // Insert comma (if needed) + newline + new property before the closing }
-    const commaPrefix = hasComma ? "" : ",";
-    const insertText = `${commaPrefix}\n${newPropText}`;
-
-    model.applyEdits([
-      {
-        range: new monaco.Range(
-          lastPropEndPos.lineNumber,
-          lastPropEndPos.column,
-          lastPropEndPos.lineNumber,
-          lastPropEndPos.column,
-        ),
-        text: insertText,
-      },
-    ]);
+    return;
   }
+
+  // Determine which property to insert after.
+  let anchorProp: Node | undefined;
+  if (afterPropertyName) {
+    for (const prop of root.children) {
+      if (
+        prop.type === "property" &&
+        prop.children &&
+        prop.children[0]?.type === "string" &&
+        prop.children[0].value === afterPropertyName
+      ) {
+        anchorProp = prop;
+        break;
+      }
+    }
+  }
+
+  // Fall back to last property when no anchor found.
+  const targetProp = anchorProp ?? root.children[root.children.length - 1];
+  const targetEnd = targetProp.offset + targetProp.length;
+  const targetEndPos = model.getPositionAt(targetEnd);
+
+  // Comma logic depends on whether we're inserting at the end or in the middle.
+  // Mid-object: the anchor already has a trailing comma (separating it from the
+  // next property), so we always need a NEW comma between the anchor and our
+  // inserted property — the existing comma stays between our property and the
+  // next one.  End-of-object: only add a comma if there isn't a trailing one.
+  const isLast = targetProp === root.children[root.children.length - 1];
+  let commaPrefix: string;
+  if (isLast) {
+    const afterTarget = text.substring(targetEnd, targetEnd + 20);
+    commaPrefix = /^\s*,/.test(afterTarget) ? "" : ",";
+  } else {
+    commaPrefix = ",";
+  }
+  const insertText = `${commaPrefix}\n${newPropText}`;
+
+  model.applyEdits([
+    {
+      range: new monaco.Range(
+        targetEndPos.lineNumber,
+        targetEndPos.column,
+        targetEndPos.lineNumber,
+        targetEndPos.column,
+      ),
+      text: insertText,
+    },
+  ]);
 }
 
 /**
@@ -590,8 +618,33 @@ function applyCvcExtraction(
 
   // --- Phase 2: sequentially insert new CVC fields ---
   // Each insertion changes document offsets, so we insert one at a time.
+  // Fields are inserted near their logical group: chains after their CVC,
+  // CVCs after SwUpgradeFilename or the previous CVC group.
+  const INSERT_AFTER: Record<string, string[]> = {
+    ManufacturerCvc: ["SwUpgradeFilename"],
+    ManufacturerCvcChain: ["ManufacturerCvc"],
+    CoSignerCvc: ["ManufacturerCvcChain", "ManufacturerCvc", "SwUpgradeFilename"],
+    CoSignerCvcChain: ["CoSignerCvc"],
+  };
   for (const field of fieldsToInsert) {
-    insertChunkedProperty(editor, field.name, field.hexValue);
+    const candidates = INSERT_AFTER[field.name];
+    let anchor: string | undefined;
+    if (candidates) {
+      // Re-read document each time (previous inserts changed offsets).
+      const currentText = model.getValue();
+      for (const candidate of candidates) {
+        // Check both chunked properties and regular string properties.
+        if (findChunkedProperties(currentText).some((p) => p.name === candidate)) {
+          anchor = candidate;
+          break;
+        }
+        if (findStringProperty(currentText, candidate)) {
+          anchor = candidate;
+          break;
+        }
+      }
+    }
+    insertChunkedProperty(editor, field.name, field.hexValue, anchor);
   }
 
   // --- Phase 3: insert SwUpgradeFilename if it didn't already exist ---
