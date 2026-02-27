@@ -7,6 +7,7 @@
  */
 
 import { loadVendorSchema } from "../codec/index";
+import { showToast } from "./toast";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,7 +102,8 @@ export function showVendorSchemaModal(container: HTMLElement): void {
           if (added) loaded++;
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
-          alert(`Failed to load ${filename}:\n${msg}`);
+          console.error(`Vendor schema load error (${filename}):`, e);
+          showToast(`Could not load vendor schema "${filename}".`, "error");
         }
       }
       if (loaded > 0) {

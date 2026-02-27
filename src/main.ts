@@ -25,6 +25,7 @@ import { openFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
+import { showToast } from "./ui/toast";
 
 /** Returns true if the error is a user-initiated file picker cancellation. */
 function isPickerCancellation(e: unknown): boolean {
@@ -96,7 +97,7 @@ function main(): void {
         } else {
           // Binary file — decode via WASM codec
           if (!isReady()) {
-            alert("WASM codec is still loading. Please try again in a moment.");
+            showToast("The codec is still loading. Please try again in a moment.", "info");
             return;
           }
           try {
@@ -107,9 +108,7 @@ function main(): void {
             setStatusFileName(statusBar, currentFileName);
           } catch (decodeErr) {
             console.error("Decode error:", decodeErr);
-            alert(
-              `Failed to decode binary file "${result.name}":\n${decodeErr instanceof Error ? decodeErr.message : String(decodeErr)}`,
-            );
+            showToast("Could not decode the binary file. It may be corrupted or in an unsupported format.", "error");
           }
         }
       } catch (e) {
@@ -139,9 +138,7 @@ function main(): void {
       } catch (e) {
         if (!isPickerCancellation(e)) {
           console.error("Encode error:", e);
-          alert(
-            `Failed to encode config:\n${e instanceof Error ? e.message : String(e)}`,
-          );
+          showToast("Encoding failed. Please check the configuration for errors.", "error");
         }
       }
     },
@@ -163,9 +160,7 @@ function main(): void {
       } catch (e) {
         if (!isPickerCancellation(e)) {
           console.error("Decode error:", e);
-          alert(
-            `Failed to decode file:\n${e instanceof Error ? e.message : String(e)}`,
-          );
+          showToast("Could not decode the selected file. It may be corrupted or in an unsupported format.", "error");
         }
       }
     },

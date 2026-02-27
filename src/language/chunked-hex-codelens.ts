@@ -14,6 +14,7 @@ import { showCvcExtractResult, type CvcFieldInfo } from "../ui/cvc-extract-resul
 import { showCertificateDetails } from "../ui/certificate-details";
 import { parseCertificateHex } from "../codec/certificate-parser";
 import { extractCVC, isReady } from "../codec/index";
+import { showToast } from "../ui/toast";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -185,7 +186,7 @@ export function registerChunkedHexCodeLens(
     0,
     async () => {
       if (!isReady()) {
-        alert("WASM codec is not ready yet. Please wait for initialization to complete.");
+        showToast("The codec is still loading. Please wait a moment.", "info");
         return;
       }
 
@@ -219,7 +220,7 @@ export function registerChunkedHexCodeLens(
           result.CoSignerCvcChain;
 
         if (!hasAny) {
-          alert("No CVC certificates found in the selected firmware file.");
+          showToast("No CVC certificates were found in the selected firmware file.", "info");
           return;
         }
 
@@ -239,8 +240,8 @@ export function registerChunkedHexCodeLens(
           },
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        alert(`Failed to extract CVC certificates:\n${message}`);
+        console.error("CVC extraction error:", err);
+        showToast("The selected file does not appear to be a valid signed firmware image.", "error");
       }
     },
   );
@@ -260,8 +261,8 @@ export function registerChunkedHexCodeLens(
           certificates: certs,
         });
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        alert(`Failed to parse certificate:\n${message}`);
+        console.error("Certificate parse error:", err);
+        showToast("Could not parse the certificate data.", "error");
       }
     },
   );
