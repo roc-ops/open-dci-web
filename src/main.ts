@@ -80,7 +80,6 @@ function main(): void {
   registerHoverProvider(metadataIndex);
   registerCompletionProvider(metadataIndex);
   registerPropertyCompletionProvider();
-  registerDiagnostics();
 
   // 6. Create UI
   let currentFileName = "untitled.jsonc";
@@ -181,7 +180,10 @@ function main(): void {
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
   editor.updateOptions({ theme: THEME_NAME });
 
-  // 8. Register comment updater for x-docsis-validValues
+  // 8. Register custom DOCSIS diagnostics (validValues checking)
+  registerDiagnostics(editor, metadataIndex);
+
+  // 9. Register comment updater for x-docsis-validValues
   registerCommentUpdater(editor, metadataIndex);
 
   // 9. Register auto-suggest trigger for comma/Enter/brace
