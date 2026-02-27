@@ -200,6 +200,17 @@ export function registerChunkedHexCodeLens(
       try {
         const result = extractCVC(firmware);
 
+        // Drop chain fields that contain only a single certificate —
+        // they duplicate the corresponding CVC field.
+        if (result.ManufacturerCvcChain) {
+          const certs = parseCertificateHex(result.ManufacturerCvcChain);
+          if (certs.length <= 1) result.ManufacturerCvcChain = "";
+        }
+        if (result.CoSignerCvcChain) {
+          const certs = parseCertificateHex(result.CoSignerCvcChain);
+          if (certs.length <= 1) result.CoSignerCvcChain = "";
+        }
+
         // Check if any certificates were found
         const hasAny =
           result.ManufacturerCvc ||
