@@ -242,6 +242,36 @@ function computeReplacementRange(
 }
 
 // ---------------------------------------------------------------------------
+// Trailing-comma detection
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns true if a completion inserted at `range` needs a trailing comma.
+ *
+ * Scans forward from the end of the replacement range to find the first
+ * non-whitespace character.  If it's a closing delimiter (`}`, `]`) or an
+ * existing comma, no trailing comma is needed.  Anything else (e.g. another
+ * `"` starting a property key) means we need to add one.
+ */
+function needsTrailingComma(
+  model: monaco.editor.ITextModel,
+  range: monaco.Range,
+): boolean {
+  const endOffset = model.getOffsetAt(
+    new monaco.Position(range.endLineNumber, range.endColumn),
+  );
+  const text = model.getValue();
+
+  for (let i = endOffset; i < text.length; i++) {
+    const ch = text[i];
+    if (/\s/.test(ch)) continue;
+    return ch !== "}" && ch !== "]" && ch !== ",";
+  }
+
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -284,6 +314,12 @@ export function registerPropertyCompletionProvider(): monaco.IDisposable {
       // Build the replacement range
       const range = computeReplacementRange(model, position);
 
+      // Determine if a trailing comma is needed — check what follows the
+      // replacement range.  If the next non-whitespace character is another
+      // property key (or any content that isn't a closing delimiter / comma),
+      // we need to append a comma so the JSON stays valid.
+      const comma = needsTrailingComma(model, range) ? "," : "";
+
       const suggestions: monaco.languages.CompletionItem[] = [];
       let sortIndex = 0;
 
@@ -304,20 +340,20 @@ export function registerPropertyCompletionProvider(): monaco.IDisposable {
 
         switch (type) {
           case "object":
-            insertText = `"${propName}": {\n\t$0\n}`;
+            insertText = `"${propName}": {\n\t$0\n}${comma}`;
             detail = "object";
             break;
           case "array":
-            insertText = `"${propName}": [\n\t{\n\t\t$0\n\t}\n]`;
+            insertText = `"${propName}": [\n\t{\n\t\t$0\n\t}\n]${comma}`;
             detail = "array";
             break;
           case "number":
-            insertText = `"${propName}": $1`;
+            insertText = `"${propName}": $1${comma}`;
             detail = "integer";
             break;
           default:
             // string
-            insertText = `"${propName}": "$1"`;
+            insertText = `"${propName}": "$1"${comma}`;
             detail = "string";
             break;
         }
