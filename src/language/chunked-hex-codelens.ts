@@ -11,6 +11,8 @@ import { parseTree, type Node } from "jsonc-parser";
 import { showHexInput } from "../ui/hex-input";
 import { pickFirmwareFile } from "../file/pick-firmware";
 import { showCvcExtractResult, type CvcFieldInfo } from "../ui/cvc-extract-result";
+import { showCertificateDetails } from "../ui/certificate-details";
+import { parseCertificateHex } from "../codec/certificate-parser";
 import { extractCVC, isReady } from "../codec/index";
 
 // ---------------------------------------------------------------------------
@@ -236,6 +238,27 @@ export function registerChunkedHexCodeLens(
     return { dispose() {} };
   }
 
+  // Allocate a third command for showing certificate details.
+  const showDetailsCommandId = editor.addCommand(
+    0,
+    (_ctx, data: { propertyName: string; hexValue: string }) => {
+      try {
+        const certs = parseCertificateHex(data.hexValue);
+        showCertificateDetails(container, {
+          propertyName: data.propertyName,
+          certificates: certs,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        alert(`Failed to parse certificate:\n${message}`);
+      }
+    },
+  );
+
+  if (showDetailsCommandId === null) {
+    return { dispose() {} };
+  }
+
   const provider = monaco.languages.registerCodeLensProvider("json", {
     provideCodeLenses(model) {
       const text = model.getValue();
@@ -262,7 +285,7 @@ export function registerChunkedHexCodeLens(
           },
         });
 
-        // "Extract from Firmware" lens on CVC-specific properties
+        // "Extract from Firmware" and "Show Details" lenses on CVC-specific properties
         if (CVC_PROPERTIES.has(prop.name)) {
           lenses.push({
             range: new monaco.Range(pos.lineNumber, 1, pos.lineNumber, 1),
@@ -271,6 +294,23 @@ export function registerChunkedHexCodeLens(
               title: "Extract from Firmware",
             },
           });
+
+          // Only show "Show Details" when the property has a non-empty hex value
+          if (prop.value) {
+            lenses.push({
+              range: new monaco.Range(pos.lineNumber, 1, pos.lineNumber, 1),
+              command: {
+                id: showDetailsCommandId,
+                title: "\u2139 Show Certificate Details",
+                arguments: [
+                  {
+                    propertyName: prop.name,
+                    hexValue: prop.value,
+                  },
+                ],
+              },
+            });
+          }
         }
       }
 
