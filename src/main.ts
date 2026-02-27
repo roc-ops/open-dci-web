@@ -26,6 +26,13 @@ import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
 
+/** Returns true if the error is a user-initiated file picker cancellation. */
+function isPickerCancellation(e: unknown): boolean {
+  if (e instanceof DOMException && e.name === "AbortError") return true;
+  if (e instanceof Error && e.message === "File selection cancelled") return true;
+  return false;
+}
+
 // Default content shown when the editor first opens
 const DEFAULT_CONTENT = `{
   "DownstreamServiceFlow": [
@@ -106,7 +113,7 @@ function main(): void {
           }
         }
       } catch (e) {
-        if (e instanceof Error && e.message !== "File selection cancelled") {
+        if (!isPickerCancellation(e)) {
           console.error("Failed to open file:", e);
         }
       }
@@ -116,7 +123,7 @@ function main(): void {
         const content = editor.getValue();
         await saveFile(content, currentFileName);
       } catch (e) {
-        if (e instanceof Error && e.message !== "File selection cancelled") {
+        if (!isPickerCancellation(e)) {
           console.error("Failed to save file:", e);
         }
       }
@@ -130,10 +137,12 @@ function main(): void {
         const binaryFileName = currentFileName.replace(/\.(jsonc|json)$/i, ".bin");
         await saveBinaryFile(binary, binaryFileName);
       } catch (e) {
-        console.error("Encode error:", e);
-        alert(
-          `Failed to encode config:\n${e instanceof Error ? e.message : String(e)}`,
-        );
+        if (!isPickerCancellation(e)) {
+          console.error("Encode error:", e);
+          alert(
+            `Failed to encode config:\n${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
       }
     },
     onDecode: async () => {
@@ -152,11 +161,12 @@ function main(): void {
         currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
         setStatusFileName(statusBar, currentFileName);
       } catch (e) {
-        if (e instanceof Error && e.message === "File selection cancelled") return;
-        console.error("Decode error:", e);
-        alert(
-          `Failed to decode file:\n${e instanceof Error ? e.message : String(e)}`,
-        );
+        if (!isPickerCancellation(e)) {
+          console.error("Decode error:", e);
+          alert(
+            `Failed to decode file:\n${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
       }
     },
     onMibManager: () => {
