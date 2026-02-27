@@ -70,15 +70,62 @@ function hasDocsisData(meta: DocsisFieldMeta): boolean {
 }
 
 /**
+ * Extracts metadata from a node that may have a $ref with inline annotations.
+ * Inline annotations take priority over the resolved $ref target.
+ */
+function extractMergedMeta(root: SchemaNode, node: SchemaNode, resolved: SchemaNode): DocsisFieldMeta {
+  if (resolved === node) return extractMeta(node);
+  const base = extractMeta(resolved);
+  const inline = extractMeta(node);
+  // Overlay inline annotations onto resolved base
+  const merged = { ...base };
+  for (const [key, val] of Object.entries(inline) as [keyof DocsisFieldMeta, unknown][]) {
+    if (val !== undefined) (merged as Record<string, unknown>)[key] = val;
+  }
+  return merged;
+}
+
+/**
+ * Computes the absolute TLV path by combining a parent's absolute TLV
+ * with a child's (possibly relative) TLV type.
+ *
+ * Handles overlapping prefixes: e.g., parent "24.43" + child "43.5" → "24.43.5"
+ * (the child's "43" overlaps with the parent's last segment).
+ */
+function computeAbsoluteTlv(parentAbsTlv: string | undefined, relTlv: string | number): string {
+  const rel = String(relTlv);
+  if (!parentAbsTlv) return rel;
+
+  const lastDot = parentAbsTlv.lastIndexOf(".");
+  const lastSeg = lastDot >= 0 ? parentAbsTlv.slice(lastDot + 1) : parentAbsTlv;
+
+  // If child starts with parent's last segment + ".", it includes parent context
+  if (rel.startsWith(lastSeg + ".")) {
+    return parentAbsTlv + rel.slice(lastSeg.length);
+  }
+
+  // Otherwise append as a sub-TLV
+  return parentAbsTlv + "." + rel;
+}
+
+/**
  * Builds a metadata index from the JSON Schema.
  * Keys are dot-separated JSON paths (e.g., "ServiceFlowDown.MaxSustainedRate").
  */
 export function buildMetadataIndex(schema: SchemaNode): Map<string, DocsisFieldMeta> {
   const index = new Map<string, DocsisFieldMeta>();
 
-  function walk(node: SchemaNode, path: string): void {
+  function walk(node: SchemaNode, path: string, parentAbsTlv?: string): void {
     const resolved = resolveNode(schema, node);
-    const meta = extractMeta(resolved);
+    const meta = extractMergedMeta(schema, node, resolved);
+
+    // Compute absolute TLV path
+    let absT = parentAbsTlv;
+    if (meta["x-docsis-tlvType"] != null) {
+      absT = computeAbsoluteTlv(parentAbsTlv, meta["x-docsis-tlvType"]);
+      meta["x-docsis-tlvType"] = absT;
+    }
+
     if (path && hasDocsisData(meta)) {
       index.set(path, meta);
     }
@@ -88,7 +135,7 @@ export function buildMetadataIndex(schema: SchemaNode): Map<string, DocsisFieldM
     if (props && typeof props === "object") {
       for (const [key, value] of Object.entries(props)) {
         if (value && typeof value === "object") {
-          walk(value as SchemaNode, path ? `${path}.${key}` : key);
+          walk(value as SchemaNode, path ? `${path}.${key}` : key, absT);
         }
       }
     }
@@ -103,7 +150,7 @@ export function buildMetadataIndex(schema: SchemaNode): Map<string, DocsisFieldM
       if (itemProps && typeof itemProps === "object") {
         for (const [key, value] of Object.entries(itemProps)) {
           if (value && typeof value === "object") {
-            walk(value as SchemaNode, path ? `${path}.${key}` : key);
+            walk(value as SchemaNode, path ? `${path}.${key}` : key, absT);
           }
         }
       }
