@@ -9,14 +9,37 @@ export interface MibEntry {
   filename: string;
   content: string;
   source: "bundled" | "user";
+  lastUpdated: string | null;
 }
 
 const mibs = new Map<string, MibEntry>();
 
+/** Extract LAST-UPDATED from SMIv2 MODULE-IDENTITY macro and format as readable date. */
+function extractLastUpdated(content: string): string | null {
+  const m = content.match(/LAST-UPDATED\s*"(\d+)Z?"/);
+  if (!m) return null;
+  const raw = m[1];
+  // Format: YYYYMMDDHHMMZ or YYMMDDHHMMZ
+  let year: string, month: string, day: string;
+  if (raw.length >= 12) {
+    year = raw.slice(0, 4);
+    month = raw.slice(4, 6);
+    day = raw.slice(6, 8);
+  } else if (raw.length >= 10) {
+    const yy = parseInt(raw.slice(0, 2), 10);
+    year = (yy >= 70 ? "19" : "20") + raw.slice(0, 2);
+    month = raw.slice(2, 4);
+    day = raw.slice(4, 6);
+  } else {
+    return null;
+  }
+  return `${year}-${month}-${day}`;
+}
+
 /** Populate MIB state from the bundled MIB set loaded during init. */
 export function initMibState(bundle: Record<string, string>): void {
   for (const [filename, content] of Object.entries(bundle)) {
-    mibs.set(filename, { filename, content, source: "bundled" });
+    mibs.set(filename, { filename, content, source: "bundled", lastUpdated: extractLastUpdated(content) });
   }
 }
 
@@ -30,7 +53,7 @@ function getSortedMibs(): MibEntry[] {
 function addUserMibs(files: Record<string, string>): number {
   const loaded = loadMIBs(files);
   for (const [filename, content] of Object.entries(files)) {
-    mibs.set(filename, { filename, content, source: "user" });
+    mibs.set(filename, { filename, content, source: "user", lastUpdated: extractLastUpdated(content) });
   }
   return loaded;
 }
@@ -160,7 +183,9 @@ export function showMibModal(container: HTMLElement): void {
 
       const name = document.createElement("span");
       name.className = "mib-modal-name";
-      name.textContent = entry.filename;
+      name.textContent = entry.lastUpdated
+        ? `${entry.filename} (${entry.lastUpdated})`
+        : entry.filename;
 
       const badge = document.createElement("span");
       badge.className = `mib-modal-badge mib-modal-badge-${entry.source}`;
