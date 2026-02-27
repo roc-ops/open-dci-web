@@ -56,7 +56,6 @@ export function registerCommentUpdater(
       if (valueNode === undefined) continue;
 
       const label = meta["x-docsis-validValues"][String(valueNode)];
-      if (label === undefined) continue;
 
       // Find the line where this value lives
       const valueOffset = findValueOffset(text, location.path);
@@ -68,6 +67,30 @@ export function registerCommentUpdater(
 
       // Check for existing inline comment on this line
       const commentMatch = lineContent.match(/\/\/\s*(.*)$/);
+
+      if (label === undefined) {
+        // Value not in validValues — remove stale comment if one exists
+        if (commentMatch) {
+          const commentStart = lineContent.indexOf("//");
+          // Remove trailing whitespace before the comment too
+          let removeStart = commentStart;
+          while (removeStart > 0 && lineContent[removeStart - 1] === " ") {
+            removeStart--;
+          }
+
+          isUpdating = true;
+          const editRange = new monaco.Range(
+            lineNumber,
+            removeStart + 1,
+            lineNumber,
+            lineContent.length + 1,
+          );
+          model.applyEdits([{ range: editRange, text: "" }]);
+          isUpdating = false;
+        }
+        continue;
+      }
+
       const newComment = `// ${label}`;
 
       if (commentMatch) {
