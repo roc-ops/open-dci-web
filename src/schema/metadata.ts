@@ -13,6 +13,7 @@ export interface DocsisFieldMeta {
   "x-docsis-default"?: unknown;
   "x-docsis-repeatable"?: boolean;
   "x-docsis-tlvLength"?: string | number;
+  "x-docsis-range"?: string | { min?: number; max?: number; maxLength?: number };
 }
 
 type SchemaNode = Record<string, unknown>;
@@ -54,6 +55,7 @@ function extractMeta(node: SchemaNode): DocsisFieldMeta {
   if (node["x-docsis-default"] !== undefined) meta["x-docsis-default"] = node["x-docsis-default"];
   if (node["x-docsis-repeatable"] !== undefined) meta["x-docsis-repeatable"] = node["x-docsis-repeatable"] as boolean;
   if (node["x-docsis-tlvLength"] !== undefined) meta["x-docsis-tlvLength"] = node["x-docsis-tlvLength"] as string | number;
+  if (node["x-docsis-range"] !== undefined) meta["x-docsis-range"] = node["x-docsis-range"] as DocsisFieldMeta["x-docsis-range"];
   return meta;
 }
 
@@ -65,7 +67,8 @@ function hasDocsisData(meta: DocsisFieldMeta): boolean {
     meta["x-docsis-tlvType"] ||
     meta["x-docsis-dataType"] ||
     meta["x-docsis-validValues"] ||
-    meta["x-docsis-default"] !== undefined
+    meta["x-docsis-default"] !== undefined ||
+    meta["x-docsis-range"]
   );
 }
 
