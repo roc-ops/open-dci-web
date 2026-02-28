@@ -6,6 +6,7 @@ import type { PacketCableVariant } from "../codec/index";
 export interface ToolbarCallbacks {
   onOpen: () => void;
   onSave: () => void;
+  onShare: () => void;
   onEncode: () => void;
   onDecode: () => void;
   onMibManager: () => void;
@@ -37,6 +38,7 @@ export function createToolbar(
 
   const openBtn = createButton("Open", callbacks.onOpen);
   const saveBtn = createButton("Save", callbacks.onSave);
+  const shareBtn = createButton("Get Link", callbacks.onShare);
   const encodeBtn = createButton("Encode", callbacks.onEncode, true);
   const decodeBtn = createButton("Decode", callbacks.onDecode, true);
   const mibsBtn = createButton("MIBs", callbacks.onMibManager, true);
@@ -99,6 +101,7 @@ export function createToolbar(
   fileGroup.className = "toolbar-group";
   fileGroup.appendChild(openBtn);
   fileGroup.appendChild(saveBtn);
+  fileGroup.appendChild(shareBtn);
 
   const secretGroup = document.createElement("div");
   secretGroup.className = "toolbar-group";

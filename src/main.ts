@@ -26,7 +26,13 @@ import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
 import { showToast } from "./ui/toast";
-import { getHashParam, decodeConfig } from "./sharing";
+import {
+  getHashParam,
+  decodeConfig,
+  encodeConfig,
+  buildHash,
+  isShareUrlTooLong,
+} from "./sharing";
 
 /** Returns true if the error is a user-initiated file picker cancellation. */
 function isPickerCancellation(e: unknown): boolean {
@@ -125,6 +131,27 @@ function main(): void {
         if (!isPickerCancellation(e)) {
           console.error("Failed to save file:", e);
         }
+      }
+    },
+    onShare: async () => {
+      try {
+        const content = editor.getValue();
+        if (isShareUrlTooLong(content)) {
+          showToast(
+            "This config is very large — the link may not work in all browsers. Consider using a gist or file instead.",
+            "warning",
+          );
+        }
+        const encoded = encodeConfig(content);
+        const url =
+          window.location.origin +
+          window.location.pathname +
+          buildHash({ config: encoded });
+        await navigator.clipboard.writeText(url);
+        showToast("Link copied to clipboard!", "success");
+      } catch (e) {
+        console.error("Failed to copy share link:", e);
+        showToast("Failed to copy link to clipboard.", "error");
       }
     },
     onEncode: async () => {
