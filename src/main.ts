@@ -32,6 +32,11 @@ import {
   encodeConfig,
   buildHash,
   isShareUrlTooLong,
+  fetchFromRepo,
+  fetchFromGist,
+  fetchFromUrl,
+  filenameFromUrl,
+  filenameFromPath,
 } from "./sharing";
 
 /** Returns true if the error is a user-initiated file picker cancellation. */
@@ -90,6 +95,7 @@ function main(): void {
 
   // 6. Create UI
   let currentFileName = "untitled.jsonc";
+  let statusBar: ReturnType<typeof createStatusBar>;
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
   const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant } = createToolbar(app, {
@@ -209,6 +215,8 @@ function main(): void {
   editor.updateOptions({ theme: THEME_NAME });
 
   // 7b. Load config from URL hash (if present)
+  // #config= takes priority (synchronous, inline-encoded content).
+  // Otherwise check for remote sources: #file=, #gist=, #url= (async fetch).
   const hashConfig = getHashParam("config");
   if (hashConfig) {
     try {
@@ -223,6 +231,60 @@ function main(): void {
         "Could not load the shared configuration. The link may be invalid or corrupted.",
         "error",
       );
+    }
+  } else {
+    const hashFile = getHashParam("file");
+    const hashGist = getHashParam("gist");
+    const hashUrl = getHashParam("url");
+
+    if (hashFile) {
+      showToast("Loading config from GitHub repo\u2026", "info");
+      fetchFromRepo(hashFile)
+        .then((content) => {
+          editor.setValue(content);
+          currentFileName = filenameFromPath(hashFile);
+          if (statusBar) setStatusFileName(statusBar, currentFileName);
+          showToast("Config loaded successfully.", "success");
+        })
+        .catch((err) => {
+          console.error("Failed to load file from repo:", err);
+          showToast(
+            `Could not load file from repo: ${err instanceof Error ? err.message : String(err)}`,
+            "error",
+          );
+        });
+    } else if (hashGist) {
+      showToast("Loading config from GitHub Gist\u2026", "info");
+      fetchFromGist(hashGist)
+        .then(({ content, filename }) => {
+          editor.setValue(content);
+          currentFileName = filename;
+          if (statusBar) setStatusFileName(statusBar, currentFileName);
+          showToast("Config loaded successfully.", "success");
+        })
+        .catch((err) => {
+          console.error("Failed to load Gist:", err);
+          showToast(
+            `Could not load Gist: ${err instanceof Error ? err.message : String(err)}`,
+            "error",
+          );
+        });
+    } else if (hashUrl) {
+      showToast("Loading config from URL\u2026", "info");
+      fetchFromUrl(hashUrl)
+        .then((content) => {
+          editor.setValue(content);
+          currentFileName = filenameFromUrl(hashUrl);
+          if (statusBar) setStatusFileName(statusBar, currentFileName);
+          showToast("Config loaded successfully.", "success");
+        })
+        .catch((err) => {
+          console.error("Failed to load from URL:", err);
+          showToast(
+            `Could not load from URL: ${err instanceof Error ? err.message : String(err)}`,
+            "error",
+          );
+        });
     }
   }
 
@@ -250,7 +312,7 @@ function main(): void {
   updateConfigDetection();
 
   // Status bar
-  const statusBar = createStatusBar(app, editor);
+  statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
 
   // 12. Initialize WASM codec with loading overlay

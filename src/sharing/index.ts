@@ -16,3 +16,11 @@ export {
   isShareUrlTooLong,
   SHARE_URL_MAX_LENGTH,
 } from "./config-encoder";
+
+export {
+  fetchFromRepo,
+  fetchFromGist,
+  fetchFromUrl,
+  filenameFromUrl,
+  filenameFromPath,
+} from "./remote-loader";
