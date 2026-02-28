@@ -26,6 +26,7 @@ import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
 import { showToast } from "./ui/toast";
+import { getHashParam, decodeConfig } from "./sharing";
 
 /** Returns true if the error is a user-initiated file picker cancellation. */
 function isPickerCancellation(e: unknown): boolean {
@@ -179,6 +180,24 @@ function main(): void {
   // Create editor
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
   editor.updateOptions({ theme: THEME_NAME });
+
+  // 7b. Load config from URL hash (if present)
+  const hashConfig = getHashParam("config");
+  if (hashConfig) {
+    try {
+      const content = decodeConfig(hashConfig);
+      if (content) {
+        editor.setValue(content);
+        currentFileName = "shared.jsonc";
+      }
+    } catch (e) {
+      console.error("Failed to decode shared config from URL:", e);
+      showToast(
+        "Could not load the shared configuration. The link may be invalid or corrupted.",
+        "error",
+      );
+    }
+  }
 
   // 8. Register custom DOCSIS diagnostics (validValues checking)
   registerDiagnostics(editor, metadataIndex);
