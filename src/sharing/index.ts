@@ -22,6 +22,7 @@ export {
   fetchFromGist,
   fetchFromUrl,
   fetchMibBundle,
+  fetchVendorSchemas,
   filenameFromUrl,
   filenameFromPath,
 } from "./remote-loader";

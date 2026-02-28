@@ -104,6 +104,45 @@ export async function fetchMibBundle(
 }
 
 /**
+ * Fetch vendor schema file(s) from a Gist ID or URL.
+ *
+ * - If `ref` is a hex Gist ID, fetches all files from the Gist (each file
+ *   is treated as a separate vendor schema).
+ * - Otherwise treats `ref` as a URL pointing to a single vendor schema file.
+ *
+ * Returns a map of filename → JSON content string.
+ */
+export async function fetchVendorSchemas(
+  ref: string,
+): Promise<Record<string, string>> {
+  if (/^[a-f0-9]+$/i.test(ref)) {
+    const url = `${GIST_API_BASE}/${ref}`;
+    const response = await fetch(url, {
+      headers: { Accept: "application/vnd.github.v3+json" },
+    });
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch Gist: ${response.status} ${response.statusText}`,
+      );
+    }
+    const data = (await response.json()) as {
+      files: Record<string, { filename: string; content: string }>;
+    };
+    const result: Record<string, string> = {};
+    for (const file of Object.values(data.files)) {
+      result[file.filename] = file.content;
+    }
+    if (Object.keys(result).length === 0) {
+      throw new Error("The Gist contains no files.");
+    }
+    return result;
+  }
+
+  const content = await fetchFromUrl(ref);
+  return { [filenameFromUrl(ref)]: content };
+}
+
+/**
  * Extract a filename from a URL path.
  * Returns the last path segment, or a fallback if none can be derived.
  */

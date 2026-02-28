@@ -21,7 +21,7 @@ import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
 import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mib-manager";
 import { invalidateMibBrowserCache } from "./ui/mib-browser";
-import { initVendorSchemaState, showVendorSchemaModal } from "./ui/vendor-schema-manager";
+import { initVendorSchemaState, addUserSchema, showVendorSchemaModal } from "./ui/vendor-schema-manager";
 import { openFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
@@ -37,6 +37,7 @@ import {
   fetchFromGist,
   fetchFromUrl,
   fetchMibBundle,
+  fetchVendorSchemas,
   filenameFromUrl,
   filenameFromPath,
   applyDeepLink,
@@ -367,6 +368,33 @@ function main(): void {
           console.error("Failed to load additional MIBs:", err);
           showToast(
             `Could not load additional MIBs: ${err instanceof Error ? err.message : String(err)}`,
+            "error",
+          );
+        }
+      }
+
+      // Load custom vendor schema from URL hash (augment mode)
+      const vendorParam = getHashParam("vendor");
+      if (vendorParam) {
+        try {
+          showToast("Loading custom vendor schema\u2026", "info");
+          const vendorFiles = await fetchVendorSchemas(vendorParam);
+          let loaded = 0;
+          for (const [filename, content] of Object.entries(vendorFiles)) {
+            try {
+              addUserSchema(filename, content);
+              loaded++;
+            } catch (e) {
+              console.warn(`Vendor schema ${filename} skipped:`, e);
+            }
+          }
+          if (loaded > 0) {
+            showToast(`Loaded ${loaded} vendor schema(s).`, "success");
+          }
+        } catch (err) {
+          console.error("Failed to load vendor schema:", err);
+          showToast(
+            `Could not load vendor schema: ${err instanceof Error ? err.message : String(err)}`,
             "error",
           );
         }

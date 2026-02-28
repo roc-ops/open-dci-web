@@ -253,7 +253,7 @@ function formatOui(oui: string): string {
   return `${oui.slice(0, 2)}:${oui.slice(2, 4)}:${oui.slice(4, 6)}`.toUpperCase();
 }
 
-function addUserSchema(filename: string, content: string): boolean {
+export function addUserSchema(filename: string, content: string): boolean {
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
