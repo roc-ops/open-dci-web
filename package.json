@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "build:wasm": "bash scripts/build-wasm.sh"
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "build:mib-snapshot": "node scripts/generate-mib-snapshot.mjs"
   },
   "dependencies": {
     "@peculiar/x509": "^1.14.3",
