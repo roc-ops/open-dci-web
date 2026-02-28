@@ -9,7 +9,7 @@ export interface OpenFileResult {
 }
 
 const TEXT_EXTENSIONS = [".jsonc", ".json"];
-const BINARY_EXTENSIONS = [".bin", ".cm"];
+const BINARY_EXTENSIONS = [".bin", ".cm", ".cfg"];
 
 function isTextFile(name: string): boolean {
   return TEXT_EXTENSIONS.some((ext) => name.toLowerCase().endsWith(ext));
@@ -35,7 +35,7 @@ async function openWithFilePicker(): Promise<OpenFileResult> {
       },
       {
         description: "DOCSIS Binary Config",
-        accept: { "application/octet-stream": [".bin", ".cm"] },
+        accept: { "application/octet-stream": [".bin", ".cm", ".cfg"] },
       },
     ],
     multiple: false,

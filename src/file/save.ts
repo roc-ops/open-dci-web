@@ -58,7 +58,7 @@ async function saveBinaryWithFilePicker(
     types: [
       {
         description: "DOCSIS Binary Config",
-        accept: { "application/octet-stream": [".bin", ".cm"] },
+        accept: { "application/octet-stream": [".bin", ".cm", ".cfg"] },
       },
     ],
   });
