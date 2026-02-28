@@ -68,6 +68,44 @@ Example with deep link:
 https://roc-ops.github.io/open-dci-web/#file=docs/examples/basic-cm.jsonc&tlv=MaxNumCpes
 ```
 
+### Custom MIBs
+
+Load custom MIBs from a Gist or URL. The MIB source should be a JSON object mapping filenames to SMIv2 content (`{"IF-MIB.mib": "...", ...}`).
+
+**Augment** — add MIBs alongside the bundled set:
+
+```
+https://roc-ops.github.io/open-dci-web/#config=...&mibs=abc123def456
+```
+
+**Replace** — swap out the bundled MIBs entirely:
+
+```
+https://roc-ops.github.io/open-dci-web/#config=...&mibs-replace=abc123def456
+```
+
+The parameter accepts either a Gist ID or a full URL.
+
+### Custom vendor schemas
+
+Load a vendor-specific TLV schema (e.g. custom TLV 43 sub-TLVs) from a Gist or URL:
+
+```
+https://roc-ops.github.io/open-dci-web/#config=...&vendor=abc123def456
+```
+
+For Gists, all files are loaded as separate vendor schemas. For URLs, the content is loaded as a single schema. Vendor schemas are always additive — they augment any existing schemas.
+
+### Full vendor link
+
+Combine config, vendor schema, and custom MIBs in one link:
+
+```
+https://roc-ops.github.io/open-dci-web/#config=eJwLzy...&vendor=abc123&mibs=def456
+```
+
+This gives the recipient full context: the config with the vendor's TLV definitions and MIB set pre-loaded.
+
 ### Limitations
 
 - **URL length**: Inline configs (`#config=`) are limited by browser URL length. Very large configs should use a Gist or file link instead.
