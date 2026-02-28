@@ -95,7 +95,19 @@ export function createToolbar(
 
   const title = document.createElement("span");
   title.className = "toolbar-title";
-  title.textContent = "OpenDCI Config Editor";
+  const openDciLink = document.createElement("a");
+  openDciLink.href = "https://github.com/roc-ops/open-dci";
+  openDciLink.target = "_blank";
+  openDciLink.rel = "noopener";
+  openDciLink.textContent = "OpenDCI";
+  const editorLink = document.createElement("a");
+  editorLink.href = "https://github.com/roc-ops/open-dci-web";
+  editorLink.target = "_blank";
+  editorLink.rel = "noopener";
+  editorLink.textContent = "Config Editor";
+  title.appendChild(openDciLink);
+  title.appendChild(document.createTextNode(" "));
+  title.appendChild(editorLink);
 
   const fileGroup = document.createElement("div");
   fileGroup.className = "toolbar-group";

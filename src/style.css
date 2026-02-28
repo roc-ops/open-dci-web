@@ -40,6 +40,13 @@ body {
   color: #9ca3b0;
   margin-right: auto;
 }
+.toolbar-title a {
+  color: inherit;
+  text-decoration: none;
+}
+.toolbar-title a:hover {
+  color: #d4d8e0;
+}
 
 .toolbar-group {
   display: flex;
