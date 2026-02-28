@@ -1,7 +1,7 @@
 /**
  * WASM-based encoder/decoder using the OpenDCI Go reference implementation.
  *
- * The Go WASM module exposes ten global functions:
+ * The Go WASM module exposes twelve global functions:
  *   - opendciLoadSchema(string) -> {ok: true} | {error: string}
  *   - opendciDecode(Uint8Array, secret?) -> {result: string} | {error: string}
  *   - opendciEncode(string, secret?, pad?) -> {result: Uint8Array} | {error: string}
@@ -12,6 +12,8 @@
  *   - opendciResolveOID(name) -> {result: string} | {error: string}
  *   - opendciExtractCVC(Uint8Array) -> {result: ExtractCVCResult} | {error: string}
  *   - opendciLoadVendorSchema(string) -> {ok: true} | {error: string}
+ *   - opendciSerializeMIBState() -> {result: Uint8Array} | {error: string}
+ *   - opendciRestoreMIBState(Uint8Array) -> {ok: true} | {error: string}
  */
 
 let wasmReady = false;
@@ -81,17 +83,42 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
   }
 
   // Load the full MIB library for OID/enum resolution.
+  // Fast path: try restoring from a pre-parsed snapshot.
+  // Fallback: parse mibs.json the slow way.
+  // Both paths need mibs.json for the UI (MIB manager state), so fetch it in parallel.
   let mibBundle: Record<string, string> = {};
   try {
     report("Downloading MIB library\u2026");
-    const mibResp = await fetch(`${base}mibs.json`);
+    const [snapshotResp, mibResp] = await Promise.all([
+      fetch(`${base}mibs.snapshot`).catch(() => null),
+      fetch(`${base}mibs.json`),
+    ]);
+
     if (mibResp.ok) {
       mibBundle = await mibResp.json();
+    }
+
+    let restored = false;
+    if (snapshotResp?.ok) {
+      try {
+        report("Restoring MIB library\u2026");
+        const snapshotBuf = new Uint8Array(await snapshotResp.arrayBuffer());
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const restoreResult: { ok?: boolean; error?: string } = (globalThis as any).opendciRestoreMIBState(snapshotBuf);
+        if (restoreResult.ok) {
+          restored = true;
+        } else {
+          console.warn("MIB snapshot restore failed, falling back to parse:", restoreResult.error);
+        }
+      } catch (e) {
+        console.warn("MIB snapshot restore failed, falling back to parse:", e);
+      }
+    }
+
+    if (!restored) {
       const mibCount = Object.keys(mibBundle).length;
       if (mibCount > 0) {
         report(`Parsing ${mibCount} MIB files\u2026`);
-        // Yield to let the browser paint the progress message before the
-        // synchronous opendciLoadMIBs call blocks the main thread.
         await new Promise((r) => setTimeout(r, 0));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const loadResult: { ok?: boolean; loaded?: number; error?: string } = (globalThis as any).opendciLoadMIBs(mibBundle);
