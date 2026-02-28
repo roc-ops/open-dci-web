@@ -50,7 +50,18 @@ function getSortedMibs(): MibEntry[] {
   });
 }
 
-function addUserMibs(files: Record<string, string>): number {
+export function addUserMibs(files: Record<string, string>): number {
+  const loaded = loadMIBs(files);
+  for (const [filename, content] of Object.entries(files)) {
+    mibs.set(filename, { filename, content, source: "user", lastUpdated: extractLastUpdated(content) });
+  }
+  return loaded;
+}
+
+/** Replace all MIBs (bundled + user) with a new set. Used for replace mode. */
+export function replaceAllMibs(files: Record<string, string>): number {
+  resetMIBs();
+  mibs.clear();
   const loaded = loadMIBs(files);
   for (const [filename, content] of Object.entries(files)) {
     mibs.set(filename, { filename, content, source: "user", lastUpdated: extractLastUpdated(content) });

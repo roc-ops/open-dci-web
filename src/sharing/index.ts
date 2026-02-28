@@ -21,6 +21,7 @@ export {
   fetchFromRepo,
   fetchFromGist,
   fetchFromUrl,
+  fetchMibBundle,
   filenameFromUrl,
   filenameFromPath,
 } from "./remote-loader";

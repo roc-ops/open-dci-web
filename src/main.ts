@@ -19,7 +19,8 @@ import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
-import { initMibState, showMibModal } from "./ui/mib-manager";
+import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mib-manager";
+import { invalidateMibBrowserCache } from "./ui/mib-browser";
 import { initVendorSchemaState, showVendorSchemaModal } from "./ui/vendor-schema-manager";
 import { openFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
@@ -35,6 +36,7 @@ import {
   fetchFromRepo,
   fetchFromGist,
   fetchFromUrl,
+  fetchMibBundle,
   filenameFromUrl,
   filenameFromPath,
   applyDeepLink,
@@ -331,11 +333,44 @@ function main(): void {
   // 12. Initialize WASM codec with loading overlay
   const loading = createLoadingOverlay(app);
   initWasm((msg) => loading.setMessage(msg))
-    .then(({ mibBundle, vendorSchemaBundle }) => {
+    .then(async ({ mibBundle, vendorSchemaBundle }) => {
       loading.dismiss();
       setCodecReady(true);
       initMibState(mibBundle);
       initVendorSchemaState(vendorSchemaBundle);
+
+      // Load custom MIBs from URL hash (augment or replace mode)
+      const mibsReplace = getHashParam("mibs-replace");
+      const mibsAugment = getHashParam("mibs");
+      if (mibsReplace) {
+        try {
+          showToast("Loading custom MIB set\u2026", "info");
+          const remoteMibs = await fetchMibBundle(mibsReplace);
+          const count = replaceAllMibs(remoteMibs);
+          invalidateMibBrowserCache();
+          showToast(`Replaced bundled MIBs with ${count} custom MIBs.`, "success");
+        } catch (err) {
+          console.error("Failed to load custom MIBs:", err);
+          showToast(
+            `Could not load custom MIBs: ${err instanceof Error ? err.message : String(err)}`,
+            "error",
+          );
+        }
+      } else if (mibsAugment) {
+        try {
+          showToast("Loading additional MIBs\u2026", "info");
+          const remoteMibs = await fetchMibBundle(mibsAugment);
+          const count = addUserMibs(remoteMibs);
+          invalidateMibBrowserCache();
+          showToast(`Loaded ${count} additional MIBs.`, "success");
+        } catch (err) {
+          console.error("Failed to load additional MIBs:", err);
+          showToast(
+            `Could not load additional MIBs: ${err instanceof Error ? err.message : String(err)}`,
+            "error",
+          );
+        }
+      }
     })
     .catch((err) => {
       console.error("Failed to initialize WASM codec:", err);

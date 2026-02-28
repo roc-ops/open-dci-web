@@ -83,6 +83,27 @@ export async function fetchFromUrl(url: string): Promise<string> {
 }
 
 /**
+ * Fetch a MIB bundle (JSON object mapping filename → SMIv2 content) from
+ * a Gist ID or a URL.
+ *
+ * - If `ref` looks like a hex Gist ID, fetches via the Gist API and parses
+ *   the first file's content as JSON.
+ * - Otherwise treats `ref` as a URL and fetches + parses directly.
+ */
+export async function fetchMibBundle(
+  ref: string,
+): Promise<Record<string, string>> {
+  let raw: string;
+  if (/^[a-f0-9]+$/i.test(ref)) {
+    const { content } = await fetchFromGist(ref);
+    raw = content;
+  } else {
+    raw = await fetchFromUrl(ref);
+  }
+  return JSON.parse(raw) as Record<string, string>;
+}
+
+/**
  * Extract a filename from a URL path.
  * Returns the last path segment, or a fallback if none can be derived.
  */
