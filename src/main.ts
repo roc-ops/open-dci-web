@@ -23,7 +23,7 @@ import { createLoadingOverlay } from "./ui/loading-overlay";
 import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mib-manager";
 import { invalidateMibBrowserCache } from "./ui/mib-browser";
 import { initVendorSchemaState, addUserSchema, showVendorSchemaModal } from "./ui/vendor-schema-manager";
-import { openFile } from "./file/open";
+import { openFile, openBinaryFile } from "./file/open";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
@@ -187,7 +187,7 @@ function main(): void {
     },
     onDecode: async () => {
       try {
-        const result = await openFile();
+        const result = await openBinaryFile();
         let binary: Uint8Array;
         if (typeof result.content === "string") {
           // If user selected a text file, convert to bytes

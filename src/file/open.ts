@@ -1,6 +1,10 @@
 /**
  * File open — uses the File System Access API with fallback
  * to let the user open DOCSIS config files from disk.
+ *
+ * Two entry points:
+ *   - openFile()       — for Open button (JSONC text configs)
+ *   - openBinaryFile() — for Decode button (binary configs)
  */
 
 export interface OpenFileResult {
@@ -15,29 +19,56 @@ function isTextFile(name: string): boolean {
   return TEXT_EXTENSIONS.some((ext) => name.toLowerCase().endsWith(ext));
 }
 
-/**
- * Opens a file using the File System Access API if available,
- * falling back to a hidden <input type="file"> element.
- */
-export async function openFile(): Promise<OpenFileResult> {
-  if ("showOpenFilePicker" in window) {
-    return openWithFilePicker();
-  }
-  return openWithInput();
+interface FileTypeFilter {
+  description: string;
+  accept: Record<string, string[]>;
 }
 
-async function openWithFilePicker(): Promise<OpenFileResult> {
+/**
+ * Opens a text config file (JSONC/JSON).
+ * Used by the Open button.
+ */
+export async function openFile(): Promise<OpenFileResult> {
+  const types: FileTypeFilter[] = [
+    {
+      description: "OpenDCI JSONC Config",
+      accept: { "application/json": TEXT_EXTENSIONS },
+    },
+  ];
+  const fallbackAccept = TEXT_EXTENSIONS.join(",");
+  return pickFile(types, fallbackAccept);
+}
+
+/**
+ * Opens a binary config file for decoding.
+ * Used by the Decode button.
+ */
+export async function openBinaryFile(): Promise<OpenFileResult> {
+  const types: FileTypeFilter[] = [
+    {
+      description: "DOCSIS Binary Config",
+      accept: { "application/octet-stream": BINARY_EXTENSIONS },
+    },
+  ];
+  const fallbackAccept = BINARY_EXTENSIONS.join(",");
+  return pickFile(types, fallbackAccept);
+}
+
+async function pickFile(
+  types: FileTypeFilter[],
+  fallbackAccept: string,
+): Promise<OpenFileResult> {
+  if ("showOpenFilePicker" in window) {
+    return pickWithFilePicker(types);
+  }
+  return pickWithInput(fallbackAccept);
+}
+
+async function pickWithFilePicker(
+  types: FileTypeFilter[],
+): Promise<OpenFileResult> {
   const [handle] = await (window as unknown as { showOpenFilePicker: (opts: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker({
-    types: [
-      {
-        description: "OpenDCI JSONC Config",
-        accept: { "application/json": [".jsonc", ".json"] },
-      },
-      {
-        description: "DOCSIS Binary Config",
-        accept: { "application/octet-stream": [".bin", ".cm", ".cfg"] },
-      },
-    ],
+    types,
     multiple: false,
   });
   const file = await handle.getFile();
@@ -49,11 +80,11 @@ async function openWithFilePicker(): Promise<OpenFileResult> {
   return { name: file.name, content: new Uint8Array(buffer) };
 }
 
-function openWithInput(): Promise<OpenFileResult> {
+function pickWithInput(accept: string): Promise<OpenFileResult> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = [...TEXT_EXTENSIONS, ...BINARY_EXTENSIONS].join(",");
+    input.accept = accept;
     input.style.display = "none";
     document.body.appendChild(input);
 
