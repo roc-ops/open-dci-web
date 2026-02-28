@@ -16,6 +16,7 @@ import { registerCommentUpdater } from "./language/comment-updater";
 import { registerAutoSuggest } from "./language/auto-suggest";
 import { registerSnmpMibCodeLens } from "./language/snmp-mib-codelens";
 import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
+import { registerCopyTlvPathAction } from "./language/copy-tlv-path-action";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
@@ -318,6 +319,9 @@ function main(): void {
 
   // 10b. Register Chunked Hex CodeLens (Add/Edit buttons on chunked TLV properties)
   registerChunkedHexCodeLens(editor, app);
+
+  // 10c. Register "Copy TLV Path" right-click context menu action
+  registerCopyTlvPathAction(editor);
 
   // 11. Detect PacketCable config type and update toolbar on content changes
   const updateConfigDetection = () => {
