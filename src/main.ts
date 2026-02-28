@@ -37,6 +37,7 @@ import {
   fetchFromUrl,
   filenameFromUrl,
   filenameFromPath,
+  applyDeepLink,
 } from "./sharing";
 
 /** Returns true if the error is a user-initiated file picker cancellation. */
@@ -149,10 +150,15 @@ function main(): void {
           );
         }
         const encoded = encodeConfig(content);
+        const hashParams: Record<string, string> = { config: encoded };
+        const position = editor.getPosition();
+        if (position && !(position.lineNumber === 1 && position.column === 1)) {
+          hashParams.line = String(position.lineNumber);
+        }
         const url =
           window.location.origin +
           window.location.pathname +
-          buildHash({ config: encoded });
+          buildHash(hashParams);
         await navigator.clipboard.writeText(url);
         showToast("Link copied to clipboard!", "success");
       } catch (e) {
@@ -232,6 +238,7 @@ function main(): void {
         "error",
       );
     }
+    applyDeepLink(editor);
   } else {
     const hashFile = getHashParam("file");
     const hashGist = getHashParam("gist");
@@ -245,6 +252,7 @@ function main(): void {
           currentFileName = filenameFromPath(hashFile);
           if (statusBar) setStatusFileName(statusBar, currentFileName);
           showToast("Config loaded successfully.", "success");
+          applyDeepLink(editor);
         })
         .catch((err) => {
           console.error("Failed to load file from repo:", err);
@@ -261,6 +269,7 @@ function main(): void {
           currentFileName = filename;
           if (statusBar) setStatusFileName(statusBar, currentFileName);
           showToast("Config loaded successfully.", "success");
+          applyDeepLink(editor);
         })
         .catch((err) => {
           console.error("Failed to load Gist:", err);
@@ -277,6 +286,7 @@ function main(): void {
           currentFileName = filenameFromUrl(hashUrl);
           if (statusBar) setStatusFileName(statusBar, currentFileName);
           showToast("Config loaded successfully.", "success");
+          applyDeepLink(editor);
         })
         .catch((err) => {
           console.error("Failed to load from URL:", err);
@@ -285,6 +295,9 @@ function main(): void {
             "error",
           );
         });
+    } else {
+      // No remote content params — apply deep link to default content
+      applyDeepLink(editor);
     }
   }
 

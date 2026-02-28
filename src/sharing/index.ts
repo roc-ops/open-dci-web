@@ -24,3 +24,5 @@ export {
   filenameFromUrl,
   filenameFromPath,
 } from "./remote-loader";
+
+export { applyDeepLink } from "./deep-link";
