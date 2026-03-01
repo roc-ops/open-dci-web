@@ -5,7 +5,7 @@
  * network-first for the HTML shell and unversioned assets.
  */
 
-const CACHE_NAME = "opendci-v1";
+const CACHE_NAME = "opendci-v2";
 
 // Assets to precache on install (relative to base URL).
 // Vite hashes JS/CSS filenames, so we only precache unversioned static files.
@@ -14,6 +14,7 @@ const PRECACHE_URLS = [
   "./wasm_exec.js",
   "./opendci.wasm",
   "./docsis-config.jtd.json",
+  "./mta-config.jtd.json",
   "./mibs.json",
   "./mibs.snapshot",
   "./vendor-schemas.json",
