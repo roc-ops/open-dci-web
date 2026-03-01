@@ -211,11 +211,12 @@ export function createToolbar(
   mibGroup.appendChild(mibsBtn);
   mibGroup.appendChild(vendorsBtn);
 
-  const themeBtn = createButton("Light", callbacks.onThemeToggle);
+  // Use indirect dispatch so late-bound callbacks work after reassignment
+  const themeBtn = createButton("Light", () => callbacks.onThemeToggle());
   themeBtn.title = "Toggle light/dark theme";
   themeBtn.setAttribute("aria-label", "Toggle light/dark theme");
 
-  const settingsBtn = createButton("Settings", callbacks.onSettings);
+  const settingsBtn = createButton("Settings", () => callbacks.onSettings());
   settingsBtn.title = "Editor settings";
   settingsBtn.setAttribute("aria-label", "Editor settings");
 
