@@ -526,3 +526,11 @@ function main(): void {
 }
 
 main();
+
+// Register service worker for offline support
+if ("serviceWorker" in navigator) {
+  const base = import.meta.env.BASE_URL;
+  navigator.serviceWorker.register(`${base}sw.js`).catch((err) => {
+    console.warn("Service worker registration failed:", err);
+  });
+}
