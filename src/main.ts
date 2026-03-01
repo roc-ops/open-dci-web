@@ -14,6 +14,7 @@ import { registerCompletionProvider } from "./language/completion-provider";
 import { registerPropertyCompletionProvider } from "./language/property-completion-provider";
 import { registerDocumentSymbolProvider } from "./language/document-symbol-provider";
 import { registerDiagnostics } from "./language/diagnostics";
+import { registerQuickFixProvider } from "./language/quick-fix-provider";
 import { registerCommentUpdater } from "./language/comment-updater";
 import { registerAutoSuggest } from "./language/auto-suggest";
 import { registerSnmpMibCodeLens } from "./language/snmp-mib-codelens";
@@ -392,6 +393,9 @@ function main(): void {
 
   // 8. Register custom DOCSIS diagnostics (validValues checking)
   registerDiagnostics(editor, metadataIndex);
+
+  // 8b. Register quick-fix provider for DOCSIS diagnostics
+  registerQuickFixProvider();
 
   // 9. Register comment updater for x-docsis-validValues
   registerCommentUpdater(editor, metadataIndex);
