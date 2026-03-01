@@ -79,14 +79,17 @@ export function registerCommentUpdater(
           }
 
           isUpdating = true;
-          const editRange = new monaco.Range(
-            lineNumber,
-            removeStart + 1,
-            lineNumber,
-            lineContent.length + 1,
-          );
-          model.applyEdits([{ range: editRange, text: "" }]);
-          isUpdating = false;
+          try {
+            const editRange = new monaco.Range(
+              lineNumber,
+              removeStart + 1,
+              lineNumber,
+              lineContent.length + 1,
+            );
+            model.applyEdits([{ range: editRange, text: "" }]);
+          } finally {
+            isUpdating = false;
+          }
         }
         continue;
       }
@@ -100,14 +103,17 @@ export function registerCommentUpdater(
         if (existingComment.trim() === newComment.trim()) continue; // Already correct
 
         isUpdating = true;
-        const editRange = new monaco.Range(
-          lineNumber,
-          commentStart + 1,
-          lineNumber,
-          lineContent.length + 1,
-        );
-        model.applyEdits([{ range: editRange, text: newComment }]);
-        isUpdating = false;
+        try {
+          const editRange = new monaco.Range(
+            lineNumber,
+            commentStart + 1,
+            lineNumber,
+            lineContent.length + 1,
+          );
+          model.applyEdits([{ range: editRange, text: newComment }]);
+        } finally {
+          isUpdating = false;
+        }
       } else {
         // Insert new comment after the value
         // Find the right place: after the value and any trailing comma
@@ -115,14 +121,17 @@ export function registerCommentUpdater(
         const insertCol = trimmed.length + 1;
 
         isUpdating = true;
-        const editRange = new monaco.Range(
-          lineNumber,
-          insertCol,
-          lineNumber,
-          insertCol,
-        );
-        model.applyEdits([{ range: editRange, text: ` ${newComment}` }]);
-        isUpdating = false;
+        try {
+          const editRange = new monaco.Range(
+            lineNumber,
+            insertCol,
+            lineNumber,
+            insertCol,
+          );
+          model.applyEdits([{ range: editRange, text: ` ${newComment}` }]);
+        } finally {
+          isUpdating = false;
+        }
       }
     }
   });
