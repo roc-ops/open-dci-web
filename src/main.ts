@@ -323,12 +323,16 @@ function main(): void {
   // 10c. Register "Copy TLV Path" right-click context menu action
   registerCopyTlvPathAction(editor);
 
-  // 11. Detect PacketCable config type and update toolbar on content changes
+  // 11. Detect PacketCable config type and update toolbar on content changes (300ms debounce)
+  let configDetectTimer: ReturnType<typeof setTimeout> | undefined;
   const updateConfigDetection = () => {
     const content = editor.getValue();
     setPacketCable(detectPacketCable(content));
   };
-  editor.onDidChangeModelContent(updateConfigDetection);
+  editor.onDidChangeModelContent(() => {
+    clearTimeout(configDetectTimer);
+    configDetectTimer = setTimeout(updateConfigDetection, 300);
+  });
   updateConfigDetection();
 
   // Status bar

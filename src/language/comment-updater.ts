@@ -19,11 +19,10 @@ export function registerCommentUpdater(
   metadataIndex: Map<string, DocsisFieldMeta>,
 ): monaco.IDisposable {
   let isUpdating = false;
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let pendingChanges: monaco.editor.IModelContentChangedEvent | undefined;
 
-  return editor.onDidChangeModelContent((e) => {
-    // Prevent infinite loops from our own edits
-    if (isUpdating) return;
-
+  function processChanges(e: monaco.editor.IModelContentChangedEvent): void {
     const model = editor.getModel();
     if (!model) return;
 
@@ -134,7 +133,29 @@ export function registerCommentUpdater(
         }
       }
     }
+  }
+
+  const disposable = editor.onDidChangeModelContent((e) => {
+    // Prevent infinite loops from our own edits
+    if (isUpdating) return;
+
+    // Debounce: store the latest event and schedule processing (150ms)
+    pendingChanges = e;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      if (pendingChanges) {
+        processChanges(pendingChanges);
+        pendingChanges = undefined;
+      }
+    }, 150);
   });
+
+  return {
+    dispose() {
+      clearTimeout(debounceTimer);
+      disposable.dispose();
+    },
+  };
 }
 
 /**

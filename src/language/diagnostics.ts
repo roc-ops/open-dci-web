@@ -150,12 +150,17 @@ export function registerDiagnostics(
     monaco.editor.setModelMarkers(model, MARKER_OWNER, markers);
   }
 
-  // Run on initial load and on every content change
+  // Run on initial load and debounce subsequent content changes (200ms)
   validate();
-  const disposable = editor.onDidChangeModelContent(() => validate());
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  const disposable = editor.onDidChangeModelContent(() => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(validate, 200);
+  });
 
   return {
     dispose() {
+      clearTimeout(debounceTimer);
       disposable.dispose();
       const model = editor.getModel();
       if (model) {
