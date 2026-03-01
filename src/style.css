@@ -1137,6 +1137,12 @@ body {
   flex-shrink: 0;
 }
 
+.cvc-extract-filename-notice {
+  padding: 8px 0;
+  font-size: 12px;
+  color: #5a6374;
+}
+
 .cvc-extract-footer {
   display: flex;
   justify-content: flex-end;
