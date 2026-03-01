@@ -200,6 +200,18 @@ function main(): void {
         const secret = getSecret() || undefined;
         const pcVariant = getPacketCableVariant();
         const binary = encode(content, secret, pcVariant);
+
+        // When PC Hash is used, decode the binary back to update the editor
+        // with the computed hash value so the user can see it.
+        if (pcVariant) {
+          try {
+            const decoded = decode(binary, secret);
+            editor.setValue(decoded);
+          } catch {
+            // Non-fatal — the binary was encoded successfully, just can't round-trip
+          }
+        }
+
         const binaryFileName = currentFileName.replace(/\.(jsonc|json)$/i, ".bin");
         await saveBinaryFile(binary, binaryFileName);
       } catch (e) {
