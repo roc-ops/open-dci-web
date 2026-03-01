@@ -17,6 +17,7 @@ import { registerAutoSuggest } from "./language/auto-suggest";
 import { registerSnmpMibCodeLens } from "./language/snmp-mib-codelens";
 import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
 import { registerCopyTlvPathAction } from "./language/copy-tlv-path-action";
+import { registerKeyboardShortcuts } from "./keyboard-shortcuts";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
@@ -101,8 +102,8 @@ function main(): void {
   let currentFileName = "untitled.jsonc";
   let statusBar: ReturnType<typeof createStatusBar>;
 
-  // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
-  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant } = createToolbar(app, {
+  // Action handlers (shared between toolbar buttons and keyboard shortcuts)
+  const actions = {
     onOpen: async () => {
       try {
         const result = await openFile();
@@ -214,7 +215,10 @@ function main(): void {
     onVendorSchemaManager: () => {
       showVendorSchemaModal(app);
     },
-  });
+  };
+
+  // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
+  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant } = createToolbar(app, actions);
 
   // Editor container
   const editorContainer = document.createElement("div");
@@ -323,6 +327,9 @@ function main(): void {
 
   // 10c. Register "Copy TLV Path" right-click context menu action
   registerCopyTlvPathAction(editor);
+
+  // 10d. Register keyboard shortcuts (Ctrl+O, Ctrl+S, Ctrl+Shift+S, Ctrl+Shift+L)
+  registerKeyboardShortcuts(editor, actions);
 
   // 11. Detect PacketCable config type and update toolbar on content changes (300ms debounce)
   let configDetectTimer: ReturnType<typeof setTimeout> | undefined;
