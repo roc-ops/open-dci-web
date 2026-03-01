@@ -5,6 +5,7 @@
 import * as monaco from "monaco-editor";
 import { getLocation } from "jsonc-parser";
 import type { DocsisFieldMeta } from "../schema/metadata";
+import { buildDotPath } from "./helpers";
 
 /**
  * Registers a CompletionItemProvider for the JSON language.
@@ -29,13 +30,8 @@ export function registerCompletionProvider(
       // Only provide completions when on a value (not a property name)
       if (location.isAtPropertyKey) return null;
 
-      // Build dot-separated path, skipping numeric array indices
-      const pathParts = location.path.filter(
-        (p): p is string => typeof p === "string",
-      );
-      if (pathParts.length === 0) return null;
-
-      const dotPath = pathParts.join(".");
+      const dotPath = buildDotPath(location.path);
+      if (!dotPath) return null;
       const meta = metadataIndex.get(dotPath);
       if (!meta?.["x-docsis-validValues"]) return null;
 

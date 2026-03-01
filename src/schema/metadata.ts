@@ -16,13 +16,13 @@ export interface DocsisFieldMeta {
   "x-docsis-range"?: string | { min?: number; max?: number; maxLength?: number };
 }
 
-type SchemaNode = Record<string, unknown>;
+export type SchemaNode = Record<string, unknown>;
 
 /**
  * Resolves a $ref pointer within the schema.
  * Handles "#/$defs/Foo" style references.
  */
-function resolveRef(schema: SchemaNode, ref: string): SchemaNode | undefined {
+export function resolveRef(schema: SchemaNode, ref: string): SchemaNode | undefined {
   if (!ref.startsWith("#/")) return undefined;
   const parts = ref.slice(2).split("/");
   let current: unknown = schema;
@@ -36,7 +36,7 @@ function resolveRef(schema: SchemaNode, ref: string): SchemaNode | undefined {
 /**
  * Resolves a schema node, following $ref if present.
  */
-function resolveNode(root: SchemaNode, node: SchemaNode): SchemaNode {
+export function resolveNode(root: SchemaNode, node: SchemaNode): SchemaNode {
   if (typeof node["$ref"] === "string") {
     const resolved = resolveRef(root, node["$ref"] as string);
     if (resolved) return resolved;

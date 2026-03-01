@@ -11,37 +11,7 @@
 import * as monaco from "monaco-editor";
 import { getLocation, parseTree, findNodeAtOffset, Node } from "jsonc-parser";
 import { getSchema } from "../schema/loader";
-
-// ---------------------------------------------------------------------------
-// Schema helpers (local — kept separate from metadata.ts so the provider
-// is self-contained and only depends on the raw schema object)
-// ---------------------------------------------------------------------------
-
-type SchemaNode = Record<string, unknown>;
-
-/** Resolves a `#/$defs/Foo` JSON-pointer within the schema root. */
-function resolveRef(
-  root: SchemaNode,
-  ref: string,
-): SchemaNode | undefined {
-  if (!ref.startsWith("#/")) return undefined;
-  const parts = ref.slice(2).split("/");
-  let current: unknown = root;
-  for (const part of parts) {
-    if (current == null || typeof current !== "object") return undefined;
-    current = (current as SchemaNode)[part];
-  }
-  return current as SchemaNode | undefined;
-}
-
-/** Follow a single `$ref` if the node has one, otherwise return the node. */
-function resolveNode(root: SchemaNode, node: SchemaNode): SchemaNode {
-  if (typeof node["$ref"] === "string") {
-    const resolved = resolveRef(root, node["$ref"] as string);
-    if (resolved) return resolved;
-  }
-  return node;
-}
+import { resolveRef, resolveNode, type SchemaNode } from "../schema/metadata";
 
 /**
  * Determine the effective type string for a property schema node.

@@ -9,6 +9,7 @@
 import * as monaco from "monaco-editor";
 import { visit } from "jsonc-parser";
 import type { DocsisFieldMeta } from "../schema/metadata";
+import { buildDotPath } from "./helpers";
 
 /** Owner string used to identify our custom markers. */
 const MARKER_OWNER = "docsis-custom";
@@ -74,15 +75,13 @@ export function registerDiagnostics(
     visit(text, {
       onLiteralValue(value, offset, length, _startLine, _startChar, pathSupplier) {
         const path = pathSupplier();
-        // Build dot-separated path, skipping numeric array indices
-        const pathParts = path.filter((p): p is string => typeof p === "string");
-        if (pathParts.length === 0) return;
+        const dotPath = buildDotPath(path);
+        if (!dotPath) return;
 
-        const dotPath = pathParts.join(".");
         const meta = metadataIndex.get(dotPath);
         if (!meta) return;
 
-        const fieldName = pathParts[pathParts.length - 1];
+        const fieldName = dotPath.slice(dotPath.lastIndexOf(".") + 1);
 
         // --- validValues check ---
         if (meta["x-docsis-validValues"]) {

@@ -5,6 +5,7 @@
 import * as monaco from "monaco-editor";
 import { getLocation } from "jsonc-parser";
 import type { DocsisFieldMeta } from "../schema/metadata";
+import { buildDotPath } from "./helpers";
 
 /**
  * Formats metadata into a markdown hover string.
@@ -53,13 +54,8 @@ export function registerHoverProvider(
 
       if (!location.path || location.path.length === 0) return null;
 
-      // Build dot-separated path, skipping numeric array indices
-      const pathParts = location.path.filter(
-        (p): p is string => typeof p === "string",
-      );
-      if (pathParts.length === 0) return null;
-
-      const dotPath = pathParts.join(".");
+      const dotPath = buildDotPath(location.path);
+      if (!dotPath) return null;
       const meta = metadataIndex.get(dotPath);
       if (!meta) return null;
 

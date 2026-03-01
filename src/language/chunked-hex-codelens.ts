@@ -15,6 +15,7 @@ import { showCertificateDetails } from "../ui/certificate-details";
 import { parseCertificateHex } from "../codec/certificate-parser";
 import { extractCVC, isReady } from "../codec/index";
 import { showToast } from "../ui/toast";
+import { detectIndentOfRootObject } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -401,22 +402,6 @@ export function registerChunkedHexCodeLens(
 // Edit operations
 // ---------------------------------------------------------------------------
 
-/**
- * Detect the base indentation of the root object by looking at the first
- * property's line.
- */
-function detectIndent(
-  model: monaco.editor.ITextModel,
-  rootNode: Node,
-): string {
-  if (!rootNode.children || rootNode.children.length === 0) return "  ";
-
-  const firstProp = rootNode.children[0];
-  const pos = model.getPositionAt(firstProp.offset);
-  const lineContent = model.getLineContent(pos.lineNumber);
-  const match = lineContent.match(/^(\s*)/);
-  return match ? match[1] : "  ";
-}
 
 /**
  * Insert a new property into the root object.
@@ -438,7 +423,7 @@ function insertChunkedProperty(
   const root = findRootObject(text);
   if (!root || !root.children) return;
 
-  const indent = detectIndent(model, root);
+  const indent = detectIndentOfRootObject(model, root);
   const newPropText = `${indent}"${name}": "${value}"`;
 
   if (root.children.length === 0) {

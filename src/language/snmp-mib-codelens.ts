@@ -7,6 +7,7 @@ import * as monaco from "monaco-editor";
 import { parseTree, type Node } from "jsonc-parser";
 import { showMibBrowser } from "../ui/mib-browser";
 import { resolveName } from "../codec/index";
+import { detectIndentAtOffset } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -299,25 +300,6 @@ export function registerSnmpMibCodeLens(
 // Edit operations
 // ---------------------------------------------------------------------------
 
-/**
- * Detect the base indentation for the SnmpMibObject key by finding its
- * line in the model and extracting leading whitespace.
- */
-function detectIndent(
-  model: monaco.editor.ITextModel,
-  arrayOffset: number,
-): string {
-  // The array offset points to the `[`.  The property key ("SnmpMibObject")
-  // sits earlier on the same line or a preceding line.  We'll use the line
-  // of the array open bracket's start as a proxy: the key line indent is
-  // whatever whitespace begins that line (or the line above if the `[` is
-  // alone on a line).  A simpler heuristic: grab the leading whitespace of
-  // the line containing the `[`.
-  const pos = model.getPositionAt(arrayOffset);
-  const lineContent = model.getLineContent(pos.lineNumber);
-  const match = lineContent.match(/^(\s*)/);
-  return match ? match[1] : "";
-}
 
 /**
  * Insert a new SNMP entry into the SnmpMibObject array.
@@ -338,7 +320,7 @@ function insertSnmpEntry(
   const arr = arrays.find((a) => a.arrayNode.offset === data.arrayOffset);
   if (!arr) return;
 
-  const baseIndent = detectIndent(model, arr.arrayNode.offset);
+  const baseIndent = detectIndentAtOffset(model, arr.arrayNode.offset);
   const formatted = formatEntry(entry, baseIndent);
 
   if (arr.entries.length === 0) {
@@ -402,7 +384,7 @@ function updateSnmpEntry(
   const target = arr.entries[data.entryIndex];
   if (!target) return;
 
-  const baseIndent = detectIndent(model, arr.arrayNode.offset);
+  const baseIndent = detectIndentAtOffset(model, arr.arrayNode.offset);
   const formatted = formatEntry(entry, baseIndent);
 
   const startPos = model.getPositionAt(target.node.offset);

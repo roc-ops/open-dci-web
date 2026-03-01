@@ -8,6 +8,7 @@
 import * as monaco from "monaco-editor";
 import { getLocation, visit, type Node } from "jsonc-parser";
 import type { DocsisFieldMeta } from "../schema/metadata";
+import { buildDotPath } from "./helpers";
 
 /**
  * Registers the comment updater on the given editor.
@@ -40,13 +41,8 @@ export function registerCommentUpdater(
       // Only care about value positions (not property keys)
       if (location.isAtPropertyKey) continue;
 
-      // Build dot-separated path, skipping numeric array indices
-      const pathParts = location.path.filter(
-        (p): p is string => typeof p === "string",
-      );
-      if (pathParts.length === 0) continue;
-
-      const dotPath = pathParts.join(".");
+      const dotPath = buildDotPath(location.path);
+      if (!dotPath) continue;
       const meta = metadataIndex.get(dotPath);
       if (!meta?.["x-docsis-validValues"]) continue;
 
