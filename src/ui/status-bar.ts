@@ -62,6 +62,17 @@ export function createStatusBar(
   return statusBar;
 }
 
+/** Registers a click handler on the errors/warnings span to toggle the problems panel. */
+export function onToggleProblems(
+  statusBar: HTMLElement,
+  callback: () => void,
+): void {
+  const errorsSpan = statusBar.querySelector(".status-errors");
+  if (errorsSpan) {
+    errorsSpan.addEventListener("click", callback);
+  }
+}
+
 /** Updates the file name displayed in the status bar. */
 export function setStatusFileName(
   statusBar: HTMLElement,

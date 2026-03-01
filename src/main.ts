@@ -19,7 +19,8 @@ import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
 import { registerCopyTlvPathAction } from "./language/copy-tlv-path-action";
 import { registerKeyboardShortcuts } from "./keyboard-shortcuts";
 import { createToolbar } from "./ui/toolbar";
-import { createStatusBar, setStatusFileName, setStatusDirty } from "./ui/status-bar";
+import { createStatusBar, setStatusFileName, setStatusDirty, onToggleProblems } from "./ui/status-bar";
+import { createProblemsPanel } from "./ui/problems-panel";
 import { createLoadingOverlay } from "./ui/loading-overlay";
 import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mib-manager";
 import { invalidateMibBrowserCache } from "./ui/mib-browser";
@@ -378,9 +379,15 @@ function main(): void {
   });
   updateConfigDetection();
 
+  // Problems panel (between editor and status bar)
+  const problemsPanel = createProblemsPanel(app, editor);
+
   // Status bar
   statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
+
+  // Wire status bar errors click to toggle problems panel
+  onToggleProblems(statusBar, problemsPanel.toggle);
 
   // 12. Unsaved changes tracking
   let dirty = false;
