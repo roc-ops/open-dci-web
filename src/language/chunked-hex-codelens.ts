@@ -60,10 +60,6 @@ interface CodeLensCommandData {
   mode: "add" | "edit";
   propertyName?: string;
   existingValue?: string;
-  /** Offset of the value node (for edit mode). */
-  valueOffset?: number;
-  /** Length of the value node (for edit mode). */
-  valueLength?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -184,17 +180,20 @@ export function registerChunkedHexCodeLens(
           propertyName: data.propertyName,
           existingValue: data.existingValue,
           onSave: (_name, hexValue) => {
-            if (
-              data.valueOffset !== undefined &&
-              data.valueLength !== undefined
-            ) {
-              updateChunkedProperty(
-                editor,
-                data.valueOffset,
-                data.valueLength,
-                hexValue,
-              );
-            }
+            if (!data.propertyName) return;
+            // Re-parse to get fresh offsets (document may have changed since CodeLens creation)
+            const model = editor.getModel();
+            if (!model) return;
+            const prop = findChunkedProperties(model.getValue()).find(
+              (p) => p.name === data.propertyName,
+            );
+            if (!prop) return;
+            updateChunkedProperty(
+              editor,
+              prop.valueNode.offset,
+              prop.valueNode.length,
+              hexValue,
+            );
           },
         });
       } else {
@@ -340,8 +339,6 @@ export function registerChunkedHexCodeLens(
                 mode: "edit",
                 propertyName: prop.name,
                 existingValue: prop.value,
-                valueOffset: prop.valueNode.offset,
-                valueLength: prop.valueNode.length,
               } as CodeLensCommandData,
             ],
           },
