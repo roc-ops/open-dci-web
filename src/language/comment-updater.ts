@@ -136,7 +136,6 @@ function findValueNode(
   path: (string | number)[],
 ): string | number | boolean | null | undefined {
   let result: string | number | boolean | null | undefined;
-  let currentPath: (string | number)[] = [];
 
   visit(text, {
     onLiteralValue(value, offset, length, startLine, startChar, pathSupplier) {

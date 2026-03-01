@@ -27,7 +27,6 @@ export function registerCompletionProvider(
       if (!location.path || location.path.length === 0) return null;
 
       // Only provide completions when on a value (not a property name)
-      if (!location.isAtPropertyKey === undefined) return null;
       if (location.isAtPropertyKey) return null;
 
       // Build dot-separated path, skipping numeric array indices
