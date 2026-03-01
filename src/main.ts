@@ -19,7 +19,7 @@ import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
 import { registerCopyTlvPathAction } from "./language/copy-tlv-path-action";
 import { registerKeyboardShortcuts } from "./keyboard-shortcuts";
 import { createToolbar } from "./ui/toolbar";
-import { createStatusBar, setStatusFileName } from "./ui/status-bar";
+import { createStatusBar, setStatusFileName, setStatusDirty } from "./ui/status-bar";
 import { createLoadingOverlay } from "./ui/loading-overlay";
 import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mib-manager";
 import { invalidateMibBrowserCache } from "./ui/mib-browser";
@@ -102,6 +102,7 @@ function main(): void {
   // 6. Create UI
   let currentFileName = "untitled.jsonc";
   let statusBar: ReturnType<typeof createStatusBar>;
+  let markClean: () => void = () => {};
 
   // Action handlers (shared between toolbar buttons and keyboard shortcuts)
   const actions = {
@@ -112,6 +113,7 @@ function main(): void {
           editor.setValue(result.content);
           currentFileName = result.name;
           setStatusFileName(statusBar, currentFileName);
+          markClean();
         } else {
           // Binary file — decode via WASM codec
           if (!isReady()) {
@@ -124,6 +126,7 @@ function main(): void {
             editor.setValue(jsonc);
             currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
             setStatusFileName(statusBar, currentFileName);
+            markClean();
           } catch (decodeErr) {
             console.error("Decode error:", decodeErr);
             showToast("Could not decode the binary file. It may be corrupted or in an unsupported format.", "error");
@@ -139,6 +142,7 @@ function main(): void {
       try {
         const content = editor.getValue();
         await saveFile(content, currentFileName);
+        markClean();
       } catch (e) {
         if (!isPickerCancellation(e)) {
           console.error("Failed to save file:", e);
@@ -203,6 +207,7 @@ function main(): void {
         editor.setValue(jsonc);
         currentFileName = result.name.replace(/\.(bin|cm)$/i, ".jsonc");
         setStatusFileName(statusBar, currentFileName);
+        markClean();
       } catch (e) {
         if (!isPickerCancellation(e)) {
           console.error("Decode error:", e);
@@ -237,6 +242,7 @@ function main(): void {
       editor.setValue(content);
       currentFileName = name;
       setStatusFileName(statusBar, currentFileName);
+      markClean();
     },
     onBinaryFile: (name, binary) => {
       if (!isReady()) {
@@ -249,6 +255,7 @@ function main(): void {
         editor.setValue(jsonc);
         currentFileName = name.replace(/\.(bin|cm|cfg)$/i, ".jsonc");
         setStatusFileName(statusBar, currentFileName);
+        markClean();
       } catch (err) {
         console.error("Decode error:", err);
         showToast("Could not decode the dropped file. It may be corrupted or in an unsupported format.", "error");
@@ -375,7 +382,26 @@ function main(): void {
   statusBar = createStatusBar(app, editor);
   setStatusFileName(statusBar, currentFileName);
 
-  // 12. Initialize WASM codec with loading overlay
+  // 12. Unsaved changes tracking
+  let dirty = false;
+  const markDirty = () => {
+    if (!dirty) {
+      dirty = true;
+      setStatusDirty(statusBar, true);
+    }
+  };
+  markClean = () => {
+    dirty = false;
+    setStatusDirty(statusBar, false);
+  };
+  editor.onDidChangeModelContent(markDirty);
+  window.addEventListener("beforeunload", (e) => {
+    if (dirty) {
+      e.preventDefault();
+    }
+  });
+
+  // 13. Initialize WASM codec with loading overlay
   const loading = createLoadingOverlay(app);
   initWasm((msg) => loading.setMessage(msg))
     .then(async ({ mibBundle, vendorSchemaBundle }) => {

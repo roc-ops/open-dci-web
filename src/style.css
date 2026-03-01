@@ -221,6 +221,11 @@ body {
   color: var(--color-muted);
 }
 
+.status-dirty .status-file::before {
+  content: "\25cf  ";
+  color: var(--color-warning);
+}
+
 .status-cursor {
   color: var(--color-muted);
 }

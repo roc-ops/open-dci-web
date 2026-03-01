@@ -70,3 +70,11 @@ export function setStatusFileName(
   const fileSpan = statusBar.querySelector(".status-file");
   if (fileSpan) fileSpan.textContent = name;
 }
+
+/** Shows or hides the dirty indicator (modified dot) next to the filename. */
+export function setStatusDirty(
+  statusBar: HTMLElement,
+  dirty: boolean,
+): void {
+  statusBar.classList.toggle("status-dirty", dirty);
+}
