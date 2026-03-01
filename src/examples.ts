@@ -59,28 +59,76 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
 
   "SnmpMibObject": [
     // Enable MTA provisioning
-    { "oid": "1.3.6.1.4.1.4491.2.2.1.1.1.7.0", "type": "Integer", "value": "1" },  // pktcMtaDevEnabled — true(1)
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.1.1.1.7.0", // PKTC-MTA-MIB::pktcMtaDevEnabled.0
+      "type": "Integer",
+      "value": "1" // true(1)
+    },
 
     // DNS server for MTA FQDN resolution
-    { "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.3.0", "type": "IPAddress", "value": "10.0.0.2" },  // pktcMtaDevServerDns1
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.3.0", // PKTC-MTA-MIB::pktcMtaDevServerDns1.0
+      "type": "IPAddress",
+      "value": "10.0.0.2"
+    },
 
     // QoS — TOS values for signaling and media
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.1.8.0", "type": "Integer", "value": "40" },  // pktcSigDefCallSigTos
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.1.9.0", "type": "Integer", "value": "46" },  // pktcSigDefMediaStreamTos
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.1.8.0", // PKTC-SIG-MIB::pktcSigDefCallSigTos.0
+      "type": "Integer",
+      "value": "40"
+    },
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.1.9.0", // PKTC-SIG-MIB::pktcSigDefMediaStreamTos.0
+      "type": "Integer",
+      "value": "46"
+    },
 
     // Line 1 (ifIndex 9) — NCS endpoint configuration
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.1.9", "type": "String", "value": "ca@cms.example.com" },  // pktcNcsEndPntConfigCallAgentId
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.2.9", "type": "Integer", "value": "2727" },  // pktcNcsEndPntConfigCallAgentUdpPort
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.28.9", "type": "Integer", "value": "10" },  // pktcNcsEndPntConfigCallWaitingDelay (seconds)
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.26.9", "type": "Integer", "value": "4" },  // pktcNcsEndPntConfigStatus — createAndGo(4)
-    { "oid": "1.3.6.1.2.1.2.2.1.7.9", "type": "Integer", "value": "1" },  // ifAdminStatus — up(1)
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.1.9", // PKTC-SIG-MIB::pktcNcsEndPntConfigCallAgentId.9
+      "type": "String",
+      "value": "ca@cms.example.com"
+    },
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.2.9", // PKTC-SIG-MIB::pktcNcsEndPntConfigCallAgentUdpPort.9
+      "type": "Integer",
+      "value": "2727"
+    },
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.28.9", // PKTC-SIG-MIB::pktcNcsEndPntConfigCallWaitingDelay.9
+      "type": "Integer",
+      "value": "10" // seconds
+    },
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.26.9", // PKTC-SIG-MIB::pktcNcsEndPntConfigStatus.9
+      "type": "Integer",
+      "value": "4" // createAndGo(4)
+    },
+    {
+      "oid": "1.3.6.1.2.1.2.2.1.7.9", // IF-MIB::ifAdminStatus.9
+      "type": "Integer",
+      "value": "1" // up(1)
+    },
 
     // Line 2 (ifIndex 10) — disable
-    { "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.26.10", "type": "Integer", "value": "6" },  // pktcNcsEndPntConfigStatus — destroy(6)
-    { "oid": "1.3.6.1.2.1.2.2.1.7.10", "type": "Integer", "value": "2" },  // ifAdminStatus — down(2)
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.2.1.2.1.1.26.10", // PKTC-SIG-MIB::pktcNcsEndPntConfigStatus.10
+      "type": "Integer",
+      "value": "6" // destroy(6)
+    },
+    {
+      "oid": "1.3.6.1.2.1.2.2.1.7.10", // IF-MIB::ifAdminStatus.10
+      "type": "Integer",
+      "value": "2" // down(2)
+    },
 
     // Config hash — must be last SnmpMibObject before end delimiter
-    { "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.6.0", "type": "HexString", "value": "0000000000000000000000000000000000000000" }  // pktcMtaDevProvConfigHash
+    {
+      "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.7.0", // PKTC-MTA-MIB::pktcMtaDevProvConfigHash.0
+      "type": "HexString",
+      "value": "0000000000000000000000000000000000000000"
+    }
   ]
 }
 `,
