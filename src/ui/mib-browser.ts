@@ -267,6 +267,14 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   let searchMatches: Set<string> | null = null;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // --- Keyboard navigation state ---
+  /** OID of the node that currently holds roving tabindex="0". */
+  let focusedOid = "";
+  /** Accumulated type-ahead characters. */
+  let typeAheadBuffer = "";
+  /** Timer to clear type-ahead buffer after 500ms of no typing. */
+  let typeAheadTimer: ReturnType<typeof setTimeout> | null = null;
+
   // --- Search ---
   const searchWrap = document.createElement("div");
   searchWrap.className = "mib-browser-search-wrap";
@@ -297,6 +305,8 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   // --- Body (flex row) ---
   const treePane = document.createElement("div");
   treePane.className = "mib-browser-tree-pane";
+  treePane.setAttribute("role", "tree");
+  treePane.setAttribute("aria-label", "MIB Browser");
 
   const detailPane = document.createElement("div");
   detailPane.className = "mib-browser-detail-pane";
@@ -686,6 +696,16 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     for (const child of tree.children) {
       renderNode(child, treePane, 0);
     }
+
+    // Ensure a valid focusedOid after render (roving tabindex initialization)
+    const visibleAfterRender = getVisibleNodes();
+    if (visibleAfterRender.length > 0) {
+      const hasFocused = focusedOid && visibleAfterRender.some((el) => el.dataset.oid === focusedOid);
+      if (!hasFocused) {
+        focusedOid = visibleAfterRender[0].dataset.oid || "";
+        setRovingTabindex(focusedOid);
+      }
+    }
   }
 
   function renderNode(node: DisplayTreeNode, parent: HTMLElement, depth: number): void {
@@ -696,6 +716,8 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     row.className = "mib-browser-tree-node";
     row.style.paddingLeft = `${8 + depth * 16}px`;
     row.dataset.oid = node.oid;
+    row.setAttribute("role", "treeitem");
+    row.tabIndex = node.oid === focusedOid ? 0 : -1;
 
     if (node.isLeaf) {
       const bullet = document.createElement("span");
@@ -711,13 +733,19 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
       }
       row.appendChild(label);
 
-      row.addEventListener("click", () => selectLeaf(node));
+      row.addEventListener("click", () => {
+        focusedOid = node.oid;
+        selectLeaf(node);
+        setRovingTabindex(node.oid);
+      });
 
       if (selectedLeaf && selectedLeaf.oid === node.oid) {
         row.classList.add("mib-browser-tree-node-selected");
       }
     } else {
       const isExpanded = expandedOids.has(node.oid);
+      row.setAttribute("aria-expanded", String(isExpanded));
+
       const chevron = document.createElement("span");
       chevron.className = "mib-browser-tree-icon mib-browser-tree-chevron";
       chevron.textContent = isExpanded ? "\u25be" : "\u25b8";
@@ -729,6 +757,7 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
       row.appendChild(label);
 
       row.addEventListener("click", () => {
+        focusedOid = node.oid;
         if (expandedOids.has(node.oid)) {
           expandedOids.delete(node.oid);
         } else {
@@ -751,6 +780,187 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
 
     parent.appendChild(row);
   }
+
+  // --- Keyboard navigation helpers ---
+
+  /** Build a map from OID to its DisplayTreeNode for all currently visible nodes. */
+  function buildNodeMap(node: DisplayTreeNode): Map<string, DisplayTreeNode> {
+    const map = new Map<string, DisplayTreeNode>();
+    function walk(n: DisplayTreeNode): void {
+      if (searchMatches && !nodeHasMatch(n, searchMatches)) return;
+      map.set(n.oid, n);
+      if (!n.isLeaf && expandedOids.has(n.oid)) {
+        for (const child of n.children) walk(child);
+      }
+    }
+    // Mirror renderTree: iterate root's children, not root itself
+    for (const child of node.children) walk(child);
+    return map;
+  }
+
+  /** Return all visible tree-node DOM elements in document order. */
+  function getVisibleNodes(): HTMLElement[] {
+    return Array.from(treePane.querySelectorAll<HTMLElement>("[role='treeitem']"));
+  }
+
+  /** Update roving tabindex: set tabindex="0" on the target OID, "-1" on all others. */
+  function setRovingTabindex(oid: string): void {
+    const nodes = getVisibleNodes();
+    for (const el of nodes) {
+      el.tabIndex = el.dataset.oid === oid ? 0 : -1;
+    }
+  }
+
+  /** Move focus to a specific visible node by OID, updating roving tabindex. */
+  function focusNode(oid: string, shouldFocus = true): void {
+    focusedOid = oid;
+    setRovingTabindex(oid);
+    if (shouldFocus) {
+      const el = treePane.querySelector<HTMLElement>(`[data-oid="${CSS.escape(oid)}"]`);
+      if (el) el.focus();
+    }
+  }
+
+  /** Keydown handler for tree keyboard navigation. */
+  function handleTreeKeydown(e: KeyboardEvent): void {
+    // Ignore when a modifier (other than Shift for type-ahead) is held
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (!tree) return;
+
+    const visibleEls = getVisibleNodes();
+    if (visibleEls.length === 0) return;
+
+    const nodeMap = buildNodeMap(tree);
+    const currentIdx = visibleEls.findIndex((el) => el.dataset.oid === focusedOid);
+    const currentNode = focusedOid ? nodeMap.get(focusedOid) : undefined;
+
+    switch (e.key) {
+      case "ArrowDown": {
+        e.preventDefault();
+        const nextIdx = currentIdx < visibleEls.length - 1 ? currentIdx + 1 : currentIdx;
+        const nextOid = visibleEls[nextIdx]?.dataset.oid;
+        if (nextOid) focusNode(nextOid);
+        break;
+      }
+      case "ArrowUp": {
+        e.preventDefault();
+        const prevIdx = currentIdx > 0 ? currentIdx - 1 : 0;
+        const prevOid = visibleEls[prevIdx]?.dataset.oid;
+        if (prevOid) focusNode(prevOid);
+        break;
+      }
+      case "ArrowRight": {
+        e.preventDefault();
+        if (currentNode && !currentNode.isLeaf) {
+          if (!expandedOids.has(currentNode.oid)) {
+            expandedOids.add(currentNode.oid);
+            showContainerDetail(currentNode);
+            renderTree();
+            focusNode(focusedOid);
+          } else {
+            // Already expanded: move to first child
+            const nextIdx = currentIdx + 1;
+            const nextOid = visibleEls[nextIdx]?.dataset.oid;
+            if (nextOid) focusNode(nextOid);
+          }
+        }
+        break;
+      }
+      case "ArrowLeft": {
+        e.preventDefault();
+        if (currentNode && !currentNode.isLeaf && expandedOids.has(currentNode.oid)) {
+          // Collapse this node
+          expandedOids.delete(currentNode.oid);
+          showContainerDetail(currentNode);
+          renderTree();
+          focusNode(focusedOid);
+        } else {
+          // Move to parent: find the nearest preceding container at a shallower depth
+          if (currentIdx > 0) {
+            const currentEl = visibleEls[currentIdx];
+            const currentPad = parseInt(currentEl?.style.paddingLeft || "0", 10);
+            for (let i = currentIdx - 1; i >= 0; i--) {
+              const pad = parseInt(visibleEls[i]?.style.paddingLeft || "0", 10);
+              if (pad < currentPad) {
+                const parentOid = visibleEls[i]?.dataset.oid;
+                if (parentOid) focusNode(parentOid);
+                break;
+              }
+            }
+          }
+        }
+        break;
+      }
+      case "Enter":
+      case " ": {
+        e.preventDefault();
+        if (currentNode) {
+          if (currentNode.isLeaf) {
+            selectLeaf(currentNode);
+          } else {
+            if (expandedOids.has(currentNode.oid)) {
+              expandedOids.delete(currentNode.oid);
+            } else {
+              expandedOids.add(currentNode.oid);
+            }
+            showContainerDetail(currentNode);
+            renderTree();
+            focusNode(focusedOid);
+          }
+        }
+        break;
+      }
+      case "Home": {
+        e.preventDefault();
+        const firstOid = visibleEls[0]?.dataset.oid;
+        if (firstOid) focusNode(firstOid);
+        break;
+      }
+      case "End": {
+        e.preventDefault();
+        const lastOid = visibleEls[visibleEls.length - 1]?.dataset.oid;
+        if (lastOid) focusNode(lastOid);
+        break;
+      }
+      default: {
+        // Type-ahead: printable single characters
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          if (typeAheadTimer) clearTimeout(typeAheadTimer);
+          typeAheadBuffer += e.key.toLowerCase();
+          typeAheadTimer = setTimeout(() => {
+            typeAheadBuffer = "";
+          }, 500);
+
+          // Find next visible node whose label starts with the buffer
+          const startIdx = currentIdx >= 0 ? currentIdx + 1 : 0;
+          const labels = visibleEls.map((el) => {
+            const labelEl = el.querySelector(".mib-browser-tree-label");
+            return (labelEl?.textContent || "").toLowerCase();
+          });
+
+          let foundIdx = -1;
+          // Search from after current position to end, then wrap around
+          for (let i = 0; i < visibleEls.length; i++) {
+            const idx = (startIdx + i) % visibleEls.length;
+            if (labels[idx].startsWith(typeAheadBuffer)) {
+              foundIdx = idx;
+              break;
+            }
+          }
+
+          if (foundIdx >= 0) {
+            const matchOid = visibleEls[foundIdx]?.dataset.oid;
+            if (matchOid) focusNode(matchOid);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  treePane.addEventListener("keydown", handleTreeKeydown);
 
   // --- Edit mode: find and select the existing OID ---
   function initEditMode(): void {
@@ -791,7 +1001,8 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
     // Render the tree first so the node exists in DOM
     renderTree();
 
-    // Select the leaf
+    // Select the leaf and set keyboard focus to it
+    focusedOid = found.oid;
     selectLeaf(found);
 
     // Pre-populate index fields
