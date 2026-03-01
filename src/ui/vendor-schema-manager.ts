@@ -7,6 +7,7 @@
  */
 
 import { loadVendorSchema } from "../codec/index";
+import { pickFiles } from "../file/pick-files";
 import { showToast } from "./toast";
 import { createModal } from "./modal";
 
@@ -293,26 +294,10 @@ function restoreFromStorage(): void {
 }
 
 async function pickVendorSchemaFiles(): Promise<Record<string, string>> {
-  return new Promise((resolve, reject) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".json,.jtd.json";
-    input.multiple = true;
-    input.addEventListener("change", async () => {
-      const files = input.files;
-      if (!files || files.length === 0) {
-        reject(new Error("File selection cancelled"));
-        return;
-      }
-      const result: Record<string, string> = {};
-      for (const file of Array.from(files)) {
-        result[file.name] = await file.text();
-      }
-      resolve(result);
-    });
-    input.addEventListener("cancel", () => {
-      reject(new Error("File selection cancelled"));
-    });
-    input.click();
-  });
+  const files = await pickFiles({ accept: ".json,.jtd.json", multiple: true });
+  const result: Record<string, string> = {};
+  for (const file of files) {
+    result[file.name] = await file.text();
+  }
+  return result;
 }

@@ -7,6 +7,12 @@
  *   - openBinaryFile() — for Decode button (binary configs)
  */
 
+import {
+  pickFiles,
+  hasOpenFilePicker,
+  showOpenFilePicker,
+} from "./pick-files";
+
 export interface OpenFileResult {
   name: string;
   content: string | Uint8Array;
@@ -58,7 +64,7 @@ async function pickFile(
   types: FileTypeFilter[],
   fallbackAccept: string,
 ): Promise<OpenFileResult> {
-  if ("showOpenFilePicker" in window) {
+  if (hasOpenFilePicker()) {
     return pickWithFilePicker(types);
   }
   return pickWithInput(fallbackAccept);
@@ -67,10 +73,7 @@ async function pickFile(
 async function pickWithFilePicker(
   types: FileTypeFilter[],
 ): Promise<OpenFileResult> {
-  const [handle] = await (window as unknown as { showOpenFilePicker: (opts: unknown) => Promise<FileSystemFileHandle[]> }).showOpenFilePicker({
-    types,
-    multiple: false,
-  });
+  const [handle] = await showOpenFilePicker({ types, multiple: false });
   const file = await handle.getFile();
   const buffer = await file.arrayBuffer();
 
@@ -80,34 +83,11 @@ async function pickWithFilePicker(
   return { name: file.name, content: new Uint8Array(buffer) };
 }
 
-function pickWithInput(accept: string): Promise<OpenFileResult> {
-  return new Promise((resolve, reject) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = accept;
-    input.style.display = "none";
-    document.body.appendChild(input);
-
-    input.addEventListener("change", async () => {
-      const file = input.files?.[0];
-      document.body.removeChild(input);
-      if (!file) {
-        reject(new Error("No file selected"));
-        return;
-      }
-      const buffer = await file.arrayBuffer();
-      if (isTextFile(file.name)) {
-        resolve({ name: file.name, content: new TextDecoder().decode(buffer) });
-      } else {
-        resolve({ name: file.name, content: new Uint8Array(buffer) });
-      }
-    });
-
-    input.addEventListener("cancel", () => {
-      document.body.removeChild(input);
-      reject(new Error("File selection cancelled"));
-    });
-
-    input.click();
-  });
+async function pickWithInput(accept: string): Promise<OpenFileResult> {
+  const [file] = await pickFiles({ accept });
+  const buffer = await file.arrayBuffer();
+  if (isTextFile(file.name)) {
+    return { name: file.name, content: new TextDecoder().decode(buffer) };
+  }
+  return { name: file.name, content: new Uint8Array(buffer) };
 }

@@ -3,6 +3,7 @@
  */
 
 import { loadMIBs, resetMIBs } from "../codec/index";
+import { pickFiles } from "../file/pick-files";
 import { invalidateMibBrowserCache } from "./mib-browser";
 import { createModal } from "./modal";
 
@@ -84,28 +85,12 @@ async function removeMib(filename: string): Promise<void> {
 }
 
 async function pickMibFiles(): Promise<Record<string, string>> {
-  return new Promise((resolve, reject) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".mib,.txt,.my";
-    input.multiple = true;
-    input.addEventListener("change", async () => {
-      const files = input.files;
-      if (!files || files.length === 0) {
-        reject(new Error("File selection cancelled"));
-        return;
-      }
-      const result: Record<string, string> = {};
-      for (const file of Array.from(files)) {
-        result[file.name] = await file.text();
-      }
-      resolve(result);
-    });
-    input.addEventListener("cancel", () => {
-      reject(new Error("File selection cancelled"));
-    });
-    input.click();
-  });
+  const files = await pickFiles({ accept: ".mib,.txt,.my", multiple: true });
+  const result: Record<string, string> = {};
+  for (const file of files) {
+    result[file.name] = await file.text();
+  }
+  return result;
 }
 
 /** Show the MIB manager modal. */

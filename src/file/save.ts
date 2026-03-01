@@ -3,6 +3,8 @@
  * to save config files to disk.
  */
 
+import { hasSaveFilePicker, showSaveFilePicker } from "./pick-files";
+
 /**
  * Saves text content to a file. Uses showSaveFilePicker if available,
  * otherwise creates a download link.
@@ -11,7 +13,7 @@ export async function saveFile(
   content: string,
   filename: string,
 ): Promise<void> {
-  if ("showSaveFilePicker" in window) {
+  if (hasSaveFilePicker()) {
     return saveWithFilePicker(content, filename);
   }
   return saveWithDownload(content, filename);
@@ -25,7 +27,7 @@ export async function saveBinaryFile(
   data: Uint8Array,
   filename: string,
 ): Promise<void> {
-  if ("showSaveFilePicker" in window) {
+  if (hasSaveFilePicker()) {
     return saveBinaryWithFilePicker(data, filename);
   }
   return saveBinaryWithDownload(data, filename);
@@ -35,7 +37,7 @@ async function saveWithFilePicker(
   content: string,
   filename: string,
 ): Promise<void> {
-  const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
+  const handle = await showSaveFilePicker({
     suggestedName: filename,
     types: [
       {
@@ -53,7 +55,7 @@ async function saveBinaryWithFilePicker(
   data: Uint8Array,
   filename: string,
 ): Promise<void> {
-  const handle = await (window as unknown as { showSaveFilePicker: (opts: unknown) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
+  const handle = await showSaveFilePicker({
     suggestedName: filename,
     types: [
       {
