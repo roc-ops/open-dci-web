@@ -42,16 +42,26 @@ export function createToolbar(
 ): ToolbarResult {
   const toolbar = document.createElement("div");
   toolbar.className = "toolbar";
+  toolbar.setAttribute("role", "toolbar");
+  toolbar.setAttribute("aria-label", "Editor toolbar");
 
   const openBtn = createButton("Open", callbacks.onOpen);
+  openBtn.setAttribute("aria-label", "Open file");
   const saveBtn = createButton("Save", callbacks.onSave);
+  saveBtn.setAttribute("aria-label", "Save file");
   const shareBtn = createButton("Get Link", callbacks.onShare);
+  shareBtn.setAttribute("aria-label", "Get shareable link");
   const formatBtn = createButton("Format", callbacks.onFormat);
+  formatBtn.setAttribute("aria-label", "Format document");
   formatBtn.title = "Format document (Shift+Alt+F)";
   const encodeBtn = createButton("Encode", callbacks.onEncode, true);
+  encodeBtn.setAttribute("aria-label", "Encode configuration");
   const decodeBtn = createButton("Decode", callbacks.onDecode, true);
+  decodeBtn.setAttribute("aria-label", "Decode configuration");
   const mibsBtn = createButton("MIBs", callbacks.onMibManager, true);
+  mibsBtn.setAttribute("aria-label", "Manage MIBs");
   const vendorsBtn = createButton("Vendors", callbacks.onVendorSchemaManager, true);
+  vendorsBtn.setAttribute("aria-label", "Manage vendor schemas");
 
   encodeBtn.title = "WASM codec is loading\u2026";
   decodeBtn.title = "WASM codec is loading\u2026";
@@ -69,6 +79,7 @@ export function createToolbar(
   secretToggle.type = "button";
   secretToggle.textContent = "\u{1F441}";
   secretToggle.title = "Show/hide secret";
+  secretToggle.setAttribute("aria-label", "Show or hide secret");
   secretToggle.addEventListener("click", () => {
     const hidden = secretInput.type === "password";
     secretInput.type = hidden ? "text" : "password";
@@ -126,6 +137,7 @@ export function createToolbar(
     examplesMenu.classList.toggle("hidden");
   });
   examplesBtn.title = "Load an example DOCSIS configuration";
+  examplesBtn.setAttribute("aria-label", "Load example configuration");
 
   const examplesMenu = document.createElement("div");
   examplesMenu.className = "toolbar-dropdown-menu hidden";
@@ -196,9 +208,11 @@ export function createToolbar(
 
   const themeBtn = createButton("Light", callbacks.onThemeToggle);
   themeBtn.title = "Toggle light/dark theme";
+  themeBtn.setAttribute("aria-label", "Toggle light/dark theme");
 
   const settingsBtn = createButton("Settings", callbacks.onSettings);
   settingsBtn.title = "Editor settings";
+  settingsBtn.setAttribute("aria-label", "Editor settings");
 
   const themeGroup = document.createElement("div");
   themeGroup.className = "toolbar-group";

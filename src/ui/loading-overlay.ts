@@ -15,6 +15,8 @@ export interface LoadingOverlay {
 export function createLoadingOverlay(container: HTMLElement): LoadingOverlay {
   const overlay = document.createElement("div");
   overlay.className = "loading-overlay";
+  overlay.setAttribute("role", "alert");
+  overlay.setAttribute("aria-busy", "true");
 
   const content = document.createElement("div");
   content.className = "loading-content";

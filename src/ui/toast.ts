@@ -23,6 +23,8 @@ export function showToast(message: string, type: ToastType = "info"): void {
 
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
+  toast.setAttribute("role", "alert");
+  toast.setAttribute("aria-live", "assertive");
 
   const msg = document.createElement("span");
   msg.className = "toast-message";

@@ -46,6 +46,15 @@ export interface ModalElements {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+let modalIdCounter = 0;
+
+const FOCUSABLE_SELECTOR =
+  'button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+// ---------------------------------------------------------------------------
 // Factory
 // ---------------------------------------------------------------------------
 
@@ -60,6 +69,8 @@ export interface ModalElements {
  * - Body div for caller content
  * - Escape key handler (document-level keydown)
  * - Backdrop click-to-close
+ * - Focus trapping (Tab / Shift+Tab cycle within modal)
+ * - Focus restoration on close
  *
  * Returns the key DOM elements and a `close()` function so the caller
  * can assemble additional sections (footer, controls, etc.) and trigger
@@ -68,6 +79,9 @@ export interface ModalElements {
 export function createModal(options: CreateModalOptions): ModalElements {
   const { cssPrefix, title, container } = options;
   const modalClass = options.modalClass ?? `${cssPrefix}-modal`;
+
+  // Capture the element that had focus before the modal opened
+  const previouslyFocused = document.activeElement as HTMLElement | null;
 
   // Remove any existing instance
   const existing = container.querySelector(`.${cssPrefix}-backdrop`);
@@ -80,18 +94,25 @@ export function createModal(options: CreateModalOptions): ModalElements {
   // --- Modal ---
   const modal = document.createElement("div");
   modal.className = modalClass;
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
 
   // --- Header ---
   const header = document.createElement("div");
   header.className = `${cssPrefix}-header`;
 
+  const titleId = `modal-title-${++modalIdCounter}`;
   const titleEl = document.createElement("span");
   titleEl.className = `${cssPrefix}-title`;
+  titleEl.id = titleId;
   titleEl.textContent = title;
+
+  modal.setAttribute("aria-labelledby", titleId);
 
   const closeBtn = document.createElement("button");
   closeBtn.className = `${cssPrefix}-close`;
   closeBtn.textContent = "\u00d7";
+  closeBtn.setAttribute("aria-label", "Close dialog");
   closeBtn.addEventListener("click", () => close());
 
   header.appendChild(titleEl);
@@ -112,14 +133,45 @@ export function createModal(options: CreateModalOptions): ModalElements {
   // --- Close logic ---
   function close(): void {
     backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
+    document.removeEventListener("keydown", keyHandler);
+    // Restore focus to the element that was focused before the modal opened
+    if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+      previouslyFocused.focus();
+    }
   }
 
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
+  function keyHandler(e: KeyboardEvent): void {
+    if (e.key === "Escape") {
+      close();
+      return;
+    }
+
+    // Focus trap: cycle Tab / Shift+Tab within modal
+    if (e.key === "Tab") {
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ).filter((el) => !el.hasAttribute("disabled") && el.offsetParent !== null);
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first || !modal.contains(document.activeElement)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last || !modal.contains(document.activeElement)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
   }
 
-  document.addEventListener("keydown", escHandler);
+  document.addEventListener("keydown", keyHandler);
 
   backdrop.addEventListener("click", (e) => {
     if (e.target === backdrop) close();

@@ -12,6 +12,8 @@ export function createStatusBar(
 ): HTMLElement {
   const statusBar = document.createElement("div");
   statusBar.className = "status-bar";
+  statusBar.setAttribute("role", "status");
+  statusBar.setAttribute("aria-live", "polite");
 
   const errorsSpan = document.createElement("span");
   errorsSpan.className = "status-errors";
