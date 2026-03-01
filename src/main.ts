@@ -4,7 +4,8 @@
  */
 import "./style.css";
 import { configureWorkers } from "./editor/worker";
-import { registerTheme, THEME_NAME } from "./editor/theme";
+import { registerTheme } from "./editor/theme";
+import { initTheme } from "./theme-toggle";
 import { createEditor } from "./editor/setup";
 import { registerSchema, getSchema } from "./schema/loader";
 import { buildMetadataIndex } from "./schema/metadata";
@@ -227,10 +228,13 @@ function main(): void {
     onVendorSchemaManager: () => {
       showVendorSchemaModal(app);
     },
+    onThemeToggle: () => {
+      // Wired up after editor creation below
+    },
   };
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
-  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant } = createToolbar(app, actions);
+  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant, updateThemeButton } = createToolbar(app, actions);
 
   // Editor container
   const editorContainer = document.createElement("div");
@@ -239,7 +243,14 @@ function main(): void {
 
   // Create editor
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
-  editor.updateOptions({ theme: THEME_NAME });
+
+  // Apply saved/detected theme and wire up toggle
+  const themeManager = initTheme(editor);
+  updateThemeButton(themeManager.getCurrentTheme());
+  actions.onThemeToggle = () => {
+    themeManager.toggle();
+    updateThemeButton(themeManager.getCurrentTheme());
+  };
 
   // Drag-and-drop file support
   registerDropHandler({

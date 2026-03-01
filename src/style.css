@@ -16,6 +16,22 @@
   --color-error: #e06c75;
 }
 
+[data-theme="light"] {
+  --color-bg: #f5f5f5;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f0f0f0;
+  --color-border: #d0d0d0;
+  --color-border-hover: #b0b0b0;
+  --color-muted: #8b8b8b;
+  --color-text: #383a42;
+  --color-text-bright: #1a1a1a;
+  --color-heading: #111111;
+  --color-accent: #4078f2;
+  --color-success: #50a14f;
+  --color-warning: #c18401;
+  --color-error: #e45649;
+}
+
 * {
   margin: 0;
   padding: 0;

@@ -12,6 +12,7 @@ export interface ToolbarCallbacks {
   onDecode: () => void;
   onMibManager: () => void;
   onVendorSchemaManager: () => void;
+  onThemeToggle: () => void;
 }
 
 export interface ToolbarResult {
@@ -24,6 +25,8 @@ export interface ToolbarResult {
   setPacketCable: (visible: boolean) => void;
   /** Returns the selected PacketCable hash variant, or undefined if not enabled. */
   getPacketCableVariant: () => PacketCableVariant | undefined;
+  /** Update the theme toggle button label to reflect the current theme. */
+  updateThemeButton: (currentTheme: "dark" | "light") => void;
 }
 
 /**
@@ -141,12 +144,20 @@ export function createToolbar(
   mibGroup.appendChild(mibsBtn);
   mibGroup.appendChild(vendorsBtn);
 
+  const themeBtn = createButton("Light", callbacks.onThemeToggle);
+  themeBtn.title = "Toggle light/dark theme";
+
+  const themeGroup = document.createElement("div");
+  themeGroup.className = "toolbar-group";
+  themeGroup.appendChild(themeBtn);
+
   toolbar.appendChild(title);
   toolbar.appendChild(fileGroup);
   toolbar.appendChild(secretGroup);
   toolbar.appendChild(pcGroup);
   toolbar.appendChild(codecGroup);
   toolbar.appendChild(mibGroup);
+  toolbar.appendChild(themeGroup);
   container.appendChild(toolbar);
 
   function setCodecReady(ready: boolean, error?: string): void {
@@ -183,12 +194,18 @@ export function createToolbar(
     return pcSelect.value as PacketCableVariant;
   }
 
+  function updateThemeButton(currentTheme: "dark" | "light"): void {
+    // Show the opposite theme name so the user knows what clicking will switch to
+    themeBtn.textContent = currentTheme === "dark" ? "Light" : "Dark";
+  }
+
   return {
     toolbar,
     setCodecReady,
     getSecret: () => secretInput.value,
     setPacketCable,
     getPacketCableVariant,
+    updateThemeButton,
   };
 }
 
