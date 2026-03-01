@@ -35,6 +35,7 @@ import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
 import { showToast } from "./ui/toast";
+import { showQrModal } from "./ui/qr-modal";
 import {
   getHashParam,
   decodeConfig,
@@ -178,6 +179,7 @@ function main(): void {
           buildHash(hashParams);
         await navigator.clipboard.writeText(url);
         showToast("Link copied to clipboard!", "success");
+        showQrModal(app, url);
       } catch (e) {
         console.error("Failed to copy share link:", e);
         showToast("Failed to copy link to clipboard.", "error");

@@ -1775,3 +1775,89 @@ body {
   color: var(--color-muted);
   font-size: 12px;
 }
+
+/* ---------- QR Code Share Modal ---------- */
+
+.qr-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.qr-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.qr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.qr-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.qr-close {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.qr-close:hover {
+  color: var(--color-heading);
+}
+
+.qr-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  gap: 14px;
+}
+
+.qr-canvas {
+  border-radius: 6px;
+}
+
+.qr-url {
+  font-size: 11px;
+  color: var(--color-muted);
+  word-break: break-all;
+  text-align: center;
+  max-width: 280px;
+  max-height: 3.6em;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.qr-copy-btn {
+  min-width: 100px;
+}
+
+.qr-error {
+  font-size: 12px;
+  color: var(--color-error);
+  text-align: center;
+  padding: 16px 0;
+}
