@@ -33,7 +33,6 @@ import {
   decodeConfig,
   encodeConfig,
   buildHash,
-  isShareUrlTooLong,
   fetchFromRepo,
   fetchFromGist,
   fetchFromUrl,
@@ -147,13 +146,15 @@ function main(): void {
     onShare: async () => {
       try {
         const content = editor.getValue();
-        if (isShareUrlTooLong(content)) {
+        const encoded = encodeConfig(content);
+        const baseLength =
+          window.location.origin.length + window.location.pathname.length;
+        if (baseLength + "#config=".length + encoded.length > 8_000) {
           showToast(
             "This config is very large — the link may not work in all browsers. Consider using a gist or file instead.",
             "warning",
           );
         }
-        const encoded = encodeConfig(content);
         const hashParams: Record<string, string> = { config: encoded };
         const position = editor.getPosition();
         if (position && !(position.lineNumber === 1 && position.column === 1)) {
