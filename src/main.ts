@@ -178,6 +178,9 @@ function main(): void {
         showToast("Failed to copy link to clipboard.", "error");
       }
     },
+    onFormat: () => {
+      editor.getAction("editor.action.formatDocument")?.run();
+    },
     onEncode: async () => {
       try {
         const content = editor.getValue();
