@@ -27,6 +27,7 @@ import { createLoadingOverlay } from "./ui/loading-overlay";
 import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mib-manager";
 import { invalidateMibBrowserCache } from "./ui/mib-browser";
 import { initVendorSchemaState, addUserSchema, showVendorSchemaModal } from "./ui/vendor-schema-manager";
+import { showSettingsModal, applyStoredSettings } from "./ui/settings-modal";
 import { openFile, openBinaryFile } from "./file/open";
 import { registerDropHandler } from "./file/drop";
 import { saveFile, saveBinaryFile } from "./file/save";
@@ -231,6 +232,9 @@ function main(): void {
     onThemeToggle: () => {
       // Wired up after editor creation below
     },
+    onSettings: () => {
+      // Wired up after editor creation below
+    },
   };
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
@@ -244,12 +248,18 @@ function main(): void {
   // Create editor
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
 
+  // Apply saved editor settings (font size, tab size, word wrap, minimap)
+  applyStoredSettings(editor);
+
   // Apply saved/detected theme and wire up toggle
   const themeManager = initTheme(editor);
   updateThemeButton(themeManager.getCurrentTheme());
   actions.onThemeToggle = () => {
     themeManager.toggle();
     updateThemeButton(themeManager.getCurrentTheme());
+  };
+  actions.onSettings = () => {
+    showSettingsModal(app, editor);
   };
 
   // Drag-and-drop file support

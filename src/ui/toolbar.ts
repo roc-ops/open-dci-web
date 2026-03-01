@@ -13,6 +13,7 @@ export interface ToolbarCallbacks {
   onMibManager: () => void;
   onVendorSchemaManager: () => void;
   onThemeToggle: () => void;
+  onSettings: () => void;
 }
 
 export interface ToolbarResult {
@@ -147,9 +148,13 @@ export function createToolbar(
   const themeBtn = createButton("Light", callbacks.onThemeToggle);
   themeBtn.title = "Toggle light/dark theme";
 
+  const settingsBtn = createButton("Settings", callbacks.onSettings);
+  settingsBtn.title = "Editor settings";
+
   const themeGroup = document.createElement("div");
   themeGroup.className = "toolbar-group";
   themeGroup.appendChild(themeBtn);
+  themeGroup.appendChild(settingsBtn);
 
   toolbar.appendChild(title);
   toolbar.appendChild(fileGroup);
