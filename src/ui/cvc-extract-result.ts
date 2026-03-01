@@ -10,6 +10,7 @@
  */
 
 import type { ExtractCVCResult } from "../codec/index.js";
+import { createModal } from "./modal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,10 +60,6 @@ export function showCvcExtractResult(
   container: HTMLElement,
   options: CvcExtractResultOptions,
 ): void {
-  // Remove any existing modal
-  const existing = container.querySelector(".cvc-extract-backdrop");
-  if (existing) existing.remove();
-
   // Build the list of non-null fields
   const CVC_KEYS: (keyof ExtractCVCResult)[] = [
     "ManufacturerCvc",
@@ -83,32 +80,11 @@ export function showCvcExtractResult(
     }
   }
 
-  // --- Backdrop ---
-  const backdrop = document.createElement("div");
-  backdrop.className = "cvc-extract-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "cvc-extract-modal";
-
-  // --- Header ---
-  const header = document.createElement("div");
-  header.className = "cvc-extract-header";
-
-  const titleEl = document.createElement("span");
-  titleEl.className = "cvc-extract-title";
-  titleEl.textContent = "Extracted CVC Certificates";
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "cvc-extract-close";
-  closeBtn.textContent = "\u00d7";
-  closeBtn.addEventListener("click", () => close());
-
-  header.appendChild(titleEl);
-  header.appendChild(closeBtn);
-
-  // --- Body ---
-  const body = document.createElement("div");
-  body.className = "cvc-extract-body";
+  const { modal, body, close } = createModal({
+    cssPrefix: "cvc-extract",
+    title: "Extracted CVC Certificates",
+    container,
+  });
 
   const description = document.createElement("div");
   description.className = "cvc-extract-description";
@@ -176,24 +152,6 @@ export function showCvcExtractResult(
   footer.appendChild(applyBtn);
 
   // --- Assemble ---
-  modal.appendChild(header);
   modal.appendChild(body);
   modal.appendChild(footer);
-  backdrop.appendChild(modal);
-  container.appendChild(backdrop);
-
-  // --- Close handlers ---
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
-  }
-
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
-  }
-  document.addEventListener("keydown", escHandler);
 }

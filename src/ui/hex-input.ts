@@ -50,41 +50,19 @@ function formatNumber(n: number): string {
 // Modal UI
 // ---------------------------------------------------------------------------
 
+import { createModal } from "./modal";
+
 export function showHexInput(container: HTMLElement, options: HexInputOptions): void {
-  // Remove any existing hex-input modal
-  const existing = container.querySelector(".hex-input-backdrop");
-  if (existing) existing.remove();
+  const title =
+    options.mode === "edit" && options.propertyName
+      ? `Edit ${options.propertyName}`
+      : "Add Chunked TLV";
 
-  // --- Backdrop ---
-  const backdrop = document.createElement("div");
-  backdrop.className = "hex-input-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "hex-input-modal";
-
-  // --- Header ---
-  const header = document.createElement("div");
-  header.className = "hex-input-header";
-
-  const titleEl = document.createElement("span");
-  titleEl.className = "hex-input-title";
-  if (options.mode === "edit" && options.propertyName) {
-    titleEl.textContent = `Edit ${options.propertyName}`;
-  } else {
-    titleEl.textContent = "Add Chunked TLV";
-  }
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "hex-input-close";
-  closeBtn.textContent = "\u00d7";
-  closeBtn.addEventListener("click", () => close());
-
-  header.appendChild(titleEl);
-  header.appendChild(closeBtn);
-
-  // --- Body ---
-  const body = document.createElement("div");
-  body.className = "hex-input-body";
+  const { modal, body, close } = createModal({
+    cssPrefix: "hex-input",
+    title,
+    container,
+  });
 
   // Property selector (add mode only)
   let selectEl: HTMLSelectElement | null = null;
@@ -169,26 +147,8 @@ export function showHexInput(container: HTMLElement, options: HexInputOptions): 
   footer.appendChild(saveBtn);
 
   // --- Assemble modal ---
-  modal.appendChild(header);
   modal.appendChild(body);
   modal.appendChild(footer);
-  backdrop.appendChild(modal);
-  container.appendChild(backdrop);
-
-  // --- Close handlers ---
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
-  }
-
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
-  }
-  document.addEventListener("keydown", escHandler);
 
   // --- Live validation & info ---
   function updateInfo(): void {

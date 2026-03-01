@@ -4,6 +4,7 @@
 
 import { loadMIBs, resetMIBs } from "../codec/index";
 import { invalidateMibBrowserCache } from "./mib-browser";
+import { createModal } from "./modal";
 
 export interface MibEntry {
   filename: string;
@@ -109,27 +110,12 @@ async function pickMibFiles(): Promise<Record<string, string>> {
 
 /** Show the MIB manager modal. */
 export function showMibModal(container: HTMLElement): void {
-  const existing = container.querySelector(".mib-modal-backdrop");
-  if (existing) existing.remove();
-
-  const backdrop = document.createElement("div");
-  backdrop.className = "mib-modal-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "mib-modal";
-
-  // Header
-  const header = document.createElement("div");
-  header.className = "mib-modal-header";
-  const titleEl = document.createElement("span");
-  titleEl.className = "mib-modal-title";
-  titleEl.textContent = "MIB Manager";
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "mib-modal-close";
-  closeBtn.textContent = "\u00d7";
-  closeBtn.addEventListener("click", () => close());
-  header.appendChild(titleEl);
-  header.appendChild(closeBtn);
+  const { modal, close } = createModal({
+    cssPrefix: "mib-modal",
+    title: "MIB Manager",
+    container,
+    modalClass: "mib-modal",
+  });
 
   // Controls
   const controls = document.createElement("div");
@@ -237,26 +223,9 @@ export function showMibModal(container: HTMLElement): void {
     }
   }
 
-  modal.appendChild(header);
   modal.appendChild(controls);
   modal.appendChild(status);
   modal.appendChild(list);
-  backdrop.appendChild(modal);
-  container.appendChild(backdrop);
-
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
-  }
-
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
-  }
-  document.addEventListener("keydown", escHandler);
 
   renderList();
   updateCount();

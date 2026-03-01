@@ -8,6 +8,7 @@
  */
 
 import type { CertificateInfo } from "../codec/certificate-parser";
+import { createModal } from "./modal";
 
 export interface CertificateDetailsOptions {
   /** The property name being inspected (e.g. "ManufacturerCvc"). */
@@ -23,38 +24,13 @@ export function showCertificateDetails(
   container: HTMLElement,
   options: CertificateDetailsOptions,
 ): void {
-  // Remove any existing modal
-  const existing = container.querySelector(".cert-details-backdrop");
-  if (existing) existing.remove();
-
   const { propertyName, certificates } = options;
 
-  // --- Backdrop ---
-  const backdrop = document.createElement("div");
-  backdrop.className = "cert-details-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "cert-details-modal";
-
-  // --- Header ---
-  const header = document.createElement("div");
-  header.className = "cert-details-header";
-
-  const titleEl = document.createElement("span");
-  titleEl.className = "cert-details-title";
-  titleEl.textContent = `Certificate Details \u2014 ${propertyName}`;
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "cert-details-close";
-  closeBtn.textContent = "\u00d7";
-  closeBtn.addEventListener("click", () => close());
-
-  header.appendChild(titleEl);
-  header.appendChild(closeBtn);
-
-  // --- Body ---
-  const body = document.createElement("div");
-  body.className = "cert-details-body";
+  const { modal, body, close } = createModal({
+    cssPrefix: "cert-details",
+    title: `Certificate Details \u2014 ${propertyName}`,
+    container,
+  });
 
   if (certificates.length === 0) {
     const empty = document.createElement("div");
@@ -118,24 +94,6 @@ export function showCertificateDetails(
   footer.appendChild(closeFooterBtn);
 
   // --- Assemble ---
-  modal.appendChild(header);
   modal.appendChild(body);
   modal.appendChild(footer);
-  backdrop.appendChild(modal);
-  container.appendChild(backdrop);
-
-  // --- Close handlers ---
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
-  }
-
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
-  }
-  document.addEventListener("keydown", escHandler);
 }

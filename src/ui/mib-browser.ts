@@ -8,6 +8,7 @@
 
 import { queryMIBTree } from "../codec/index";
 import type { MIBTreeNode, IndexObject } from "../codec/index";
+import { createModal } from "./modal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -251,9 +252,11 @@ function findRowIndexes(tree: DisplayTreeNode, leafOid: string): IndexObject[] {
 // ---------------------------------------------------------------------------
 
 export function showMibBrowser(container: HTMLElement, options: MibBrowserOptions): void {
-  // Remove any existing browser modal
-  const existing = container.querySelector(".mib-browser-backdrop");
-  if (existing) existing.remove();
+  const { modal, body, close } = createModal({
+    cssPrefix: "mib-browser",
+    title: "MIB Browser",
+    container,
+  });
 
   const tree = getDisplayTree();
 
@@ -263,29 +266,6 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   let searchQuery = "";
   let searchMatches: Set<string> | null = null;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // --- Backdrop ---
-  const backdrop = document.createElement("div");
-  backdrop.className = "mib-browser-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "mib-browser-modal";
-
-  // --- Header ---
-  const header = document.createElement("div");
-  header.className = "mib-browser-header";
-
-  const titleEl = document.createElement("span");
-  titleEl.className = "mib-browser-title";
-  titleEl.textContent = "MIB Browser";
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "mib-browser-close";
-  closeBtn.textContent = "\u00d7";
-  closeBtn.addEventListener("click", () => close());
-
-  header.appendChild(titleEl);
-  header.appendChild(closeBtn);
 
   // --- Search ---
   const searchWrap = document.createElement("div");
@@ -315,9 +295,6 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   searchWrap.appendChild(searchInput);
 
   // --- Body (flex row) ---
-  const body = document.createElement("div");
-  body.className = "mib-browser-body";
-
   const treePane = document.createElement("div");
   treePane.className = "mib-browser-tree-pane";
 
@@ -506,27 +483,9 @@ export function showMibBrowser(container: HTMLElement, options: MibBrowserOption
   detailPane.appendChild(containerDetail);
 
   // --- Assemble modal ---
-  modal.appendChild(header);
   modal.appendChild(searchWrap);
   modal.appendChild(body);
   modal.appendChild(footer);
-  backdrop.appendChild(modal);
-  container.appendChild(backdrop);
-
-  // --- Close handlers ---
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
-  }
-
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
-  }
-  document.addEventListener("keydown", escHandler);
 
   // --- Helper: create a detail row ---
   function createDetailRow(

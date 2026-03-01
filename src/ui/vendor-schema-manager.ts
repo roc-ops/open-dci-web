@@ -8,6 +8,7 @@
 
 import { loadVendorSchema } from "../codec/index";
 import { showToast } from "./toast";
+import { createModal } from "./modal";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,27 +64,12 @@ export function initVendorSchemaState(bundle: Record<string, unknown>): void {
 
 /** Show the vendor schema manager modal. */
 export function showVendorSchemaModal(container: HTMLElement): void {
-  const existing = container.querySelector(".vendor-modal-backdrop");
-  if (existing) existing.remove();
-
-  const backdrop = document.createElement("div");
-  backdrop.className = "vendor-modal-backdrop";
-
-  const modal = document.createElement("div");
-  modal.className = "vendor-modal";
-
-  // Header
-  const header = document.createElement("div");
-  header.className = "vendor-modal-header";
-  const titleEl = document.createElement("span");
-  titleEl.className = "vendor-modal-title";
-  titleEl.textContent = "Vendor Schemas";
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "vendor-modal-close";
-  closeBtn.textContent = "\u00d7";
-  closeBtn.addEventListener("click", () => close());
-  header.appendChild(titleEl);
-  header.appendChild(closeBtn);
+  const { modal, close } = createModal({
+    cssPrefix: "vendor-modal",
+    title: "Vendor Schemas",
+    container,
+    modalClass: "vendor-modal",
+  });
 
   // Controls
   const controls = document.createElement("div");
@@ -196,25 +182,8 @@ export function showVendorSchemaModal(container: HTMLElement): void {
     }
   }
 
-  modal.appendChild(header);
   modal.appendChild(controls);
   modal.appendChild(list);
-  backdrop.appendChild(modal);
-  container.appendChild(backdrop);
-
-  backdrop.addEventListener("click", (e) => {
-    if (e.target === backdrop) close();
-  });
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", escHandler);
-  }
-
-  function escHandler(e: KeyboardEvent): void {
-    if (e.key === "Escape") close();
-  }
-  document.addEventListener("keydown", escHandler);
 
   renderList();
   updateCount();
