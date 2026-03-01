@@ -180,6 +180,61 @@ function checkDuplicateServiceFlowRefs(
 }
 
 /**
+ * Check for MtaConfigDelimiter presence in MTA configs.
+ * If only the start delimiter (1) is present, warn that the end delimiter (255)
+ * will be added automatically during encoding. JSON cannot have duplicate keys,
+ * so both delimiters can't appear as separate "MtaConfigDelimiter" properties.
+ */
+function checkMtaDelimiters(
+  text: string,
+  model: monaco.editor.ITextModel,
+  markers: monaco.editor.IMarkerData[],
+): void {
+  let delimiterValue: number | undefined;
+  let delimiterOffset = 0;
+  let delimiterLength = 0;
+
+  visit(text, {
+    onLiteralValue(value, offset, length, _startLine, _startChar, pathSupplier) {
+      const path = pathSupplier();
+      if (path.length === 1 && path[0] === "MtaConfigDelimiter" && typeof value === "number") {
+        delimiterValue = value;
+        delimiterOffset = offset;
+        delimiterLength = length;
+      }
+    },
+  });
+
+  if (delimiterValue === undefined) return;
+
+  if (delimiterValue === 1) {
+    // Start delimiter present but no end delimiter (can't have duplicate keys in JSON).
+    const startPos = model.getPositionAt(delimiterOffset);
+    const endPos = model.getPositionAt(delimiterOffset + delimiterLength);
+    markers.push({
+      severity: monaco.MarkerSeverity.Info,
+      message: "MtaConfigDelimiter end marker (255) will be added automatically during encoding.",
+      startLineNumber: startPos.lineNumber,
+      startColumn: startPos.column,
+      endLineNumber: endPos.lineNumber,
+      endColumn: endPos.column,
+    });
+  } else if (delimiterValue === 255) {
+    // End delimiter without start — unusual
+    const startPos = model.getPositionAt(delimiterOffset);
+    const endPos = model.getPositionAt(delimiterOffset + delimiterLength);
+    markers.push({
+      severity: monaco.MarkerSeverity.Warning,
+      message: "MtaConfigDelimiter is set to 255 (end marker). The start marker (1) is expected. Both will be added automatically during encoding.",
+      startLineNumber: startPos.lineNumber,
+      startColumn: startPos.column,
+      endLineNumber: endPos.lineNumber,
+      endColumn: endPos.column,
+    });
+  }
+}
+
+/**
  * Registers custom DOCSIS diagnostics on the given editor.
  * Validates values against x-docsis-validValues and x-docsis-range.
  */
@@ -273,6 +328,9 @@ export function registerDiagnostics(
 
     // --- Cross-field: duplicate ServiceFlowReference ---
     checkDuplicateServiceFlowRefs(text, model, markers);
+
+    // --- MTA delimiter check ---
+    checkMtaDelimiters(text, model, markers);
 
     monaco.editor.setModelMarkers(model, MARKER_OWNER, markers);
   }

@@ -226,13 +226,17 @@ export type PacketCableVariant = "na" | "eu" | "ietf";
  * Encode a JSON/JSONC string into a binary DOCSIS config file.
  * Optionally computes CMTS MIC (if secret provided) and/or
  * PacketCable hash (if variant provided, for MTA configs only).
+ * The format parameter ("cm" or "mta") tells the encoder which
+ * schema/registry to use; if omitted the encoder auto-detects.
  * Throws on error.
  */
-export function encode(json: string, secret?: string, packetCableHash?: PacketCableVariant): Uint8Array {
+export function encode(json: string, secret?: string, packetCableHash?: PacketCableVariant, format?: string): Uint8Array {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
   // Call with only defined arguments to avoid Go seeing "undefined" strings.
   let result: WasmBinaryResult;
-  if (packetCableHash) {
+  if (format) {
+    result = globalThis.opendciEncode(json, secret ?? "", false, packetCableHash ?? "", format);
+  } else if (packetCableHash) {
     result = globalThis.opendciEncode(json, secret ?? "", false, packetCableHash);
   } else if (secret) {
     result = globalThis.opendciEncode(json, secret);

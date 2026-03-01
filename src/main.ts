@@ -199,7 +199,8 @@ function main(): void {
         const content = editor.getValue();
         const secret = getSecret() || undefined;
         const pcVariant = getPacketCableVariant();
-        const binary = encode(content, secret, pcVariant);
+        const format = getFormat();
+        const binary = encode(content, secret, pcVariant, format);
 
         // When PC Hash is used, decode the binary back to update the editor
         // with the computed hash value so the user can see it.
@@ -267,7 +268,7 @@ function main(): void {
   };
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
-  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant, updateThemeButton, setFormat } = createToolbar(app, actions);
+  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant, updateThemeButton, setFormat, getFormat } = createToolbar(app, actions);
 
   // Editor container
   const editorContainer = document.createElement("div");

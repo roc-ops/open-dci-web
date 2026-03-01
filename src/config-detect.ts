@@ -29,7 +29,8 @@ const CM_ONLY_KEYS = new Set([
 
 /**
  * Detect whether the editor content represents a PacketCable MTA config.
- * Returns true if the config has SnmpMibObject entries and no CM-specific keys.
+ * Returns true if the config has MtaConfigDelimiter, or has SnmpMibObject
+ * entries without any CM-specific keys.
  */
 export function detectPacketCable(content: string): boolean {
   try {
@@ -38,6 +39,9 @@ export function detectPacketCable(content: string): boolean {
 
     const keys = Object.keys(parsed);
     if (keys.length === 0) return false;
+
+    // MtaConfigDelimiter is a definitive MTA indicator
+    if (keys.includes("MtaConfigDelimiter")) return true;
 
     const hasSnmpMibObject = keys.includes("SnmpMibObject");
     if (!hasSnmpMibObject) return false;
