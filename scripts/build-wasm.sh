@@ -19,14 +19,6 @@ const mibsRoot = path.join('$PROJECT_ROOT', 'vendor/open-dci/mibs');
 const dirs = ['ietf', 'iana', 'cablelabs/DOCSIS', 'cablelabs/OpenCable', 'cablelabs/PacketCable', 'cablelabs/common', 'cablelabs/wireless'];
 const bundle = {};
 
-// Patch for PKTC-MTA-MIB: upstream fixed 3 of 4 gosmi parser issues,
-// but DEFVAL { } (empty BITS value) still fails — gosmi expects an integer.
-// Remove the entire DEFVAL clause (absent DEFVAL is valid SMIv2).
-const patches = {
-  'PKTC-MTA-MIB.mib': (s) =>
-    s.replace(/^\s*DEFVAL\s*\{[^}]*\}\s*$/gm, ''),
-};
-
 for (const dir of dirs) {
   const fullDir = path.join(mibsRoot, dir);
   if (!fs.existsSync(fullDir)) continue;
@@ -35,11 +27,7 @@ for (const dir of dirs) {
     const filePath = path.join(fullDir, file);
     const stat = fs.lstatSync(filePath);
     if (!stat.isSymbolicLink()) continue; // only latest versions (symlinks)
-    let content = fs.readFileSync(filePath, 'utf8');
-    if (patches[file]) {
-      content = patches[file](content);
-    }
-    bundle[file] = content;
+    bundle[file] = fs.readFileSync(filePath, 'utf8');
   }
 }
 
