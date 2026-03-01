@@ -8,6 +8,7 @@ export interface ToolbarCallbacks {
   onOpen: () => void;
   onSave: () => void;
   onShare: () => void;
+  onDiffView: () => void;
   onFormat: () => void;
   onEncode: () => void;
   onDecode: () => void;
@@ -51,6 +52,9 @@ export function createToolbar(
   saveBtn.setAttribute("aria-label", "Save file");
   const shareBtn = createButton("Get Link", callbacks.onShare);
   shareBtn.setAttribute("aria-label", "Get shareable link");
+  const diffBtn = createButton("Diff", callbacks.onDiffView);
+  diffBtn.setAttribute("aria-label", "Compare with another file");
+  diffBtn.title = "Compare current editor content with another file";
   const formatBtn = createButton("Format", callbacks.onFormat);
   formatBtn.setAttribute("aria-label", "Format document");
   formatBtn.title = "Format document (Shift+Alt+F)";
@@ -181,6 +185,7 @@ export function createToolbar(
   fileGroup.appendChild(openBtn);
   fileGroup.appendChild(saveBtn);
   fileGroup.appendChild(shareBtn);
+  fileGroup.appendChild(diffBtn);
   fileGroup.appendChild(formatBtn);
   fileGroup.appendChild(examplesDropdown);
 

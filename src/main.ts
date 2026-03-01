@@ -36,6 +36,7 @@ import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
 import { showToast } from "./ui/toast";
 import { showQrModal } from "./ui/qr-modal";
+import { showDiffView } from "./ui/diff-view";
 import {
   getHashParam,
   decodeConfig,
@@ -184,6 +185,9 @@ function main(): void {
         console.error("Failed to copy share link:", e);
         showToast("Failed to copy link to clipboard.", "error");
       }
+    },
+    onDiffView: () => {
+      showDiffView(app, editor);
     },
     onFormat: () => {
       editor.getAction("editor.action.formatDocument")?.run();
