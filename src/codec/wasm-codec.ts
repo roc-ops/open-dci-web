@@ -1,10 +1,11 @@
 /**
  * WASM-based encoder/decoder using the OpenDCI Go reference implementation.
  *
- * The Go WASM module exposes twelve global functions:
+ * The Go WASM module exposes thirteen global functions:
  *   - opendciLoadSchema(string) -> {ok: true} | {error: string}
+ *   - opendciLoadMtaSchema(string) -> {ok: true} | {error: string}
  *   - opendciDecode(Uint8Array, secret?) -> {result: string} | {error: string}
- *   - opendciEncode(string, secret?, pad?) -> {result: Uint8Array} | {error: string}
+ *   - opendciEncode(string, secret?, pad?, packetCableHash?, format?) -> {result: Uint8Array} | {error: string}
  *   - opendciInitMIBs() -> {ok: true} | {error: string}
  *   - opendciLoadMIBs({[filename]: string}) -> {ok: true, loaded: number} | {error: string}
  *   - opendciQueryMIBTree() -> {result: string} | {error: string}
@@ -33,8 +34,9 @@ declare global {
   // eslint-disable-next-line no-var
   var Go: { new(): GoInstance };
   function opendciLoadSchema(schema: string): WasmOkResult;
+  function opendciLoadMtaSchema(schema: string): WasmOkResult;
   function opendciDecode(binary: Uint8Array, secret?: string): WasmStringResult;
-  function opendciEncode(json: string, secret?: string, pad?: boolean, packetCableHash?: string): WasmBinaryResult;
+  function opendciEncode(json: string, secret?: string, pad?: boolean, packetCableHash?: string, format?: string): WasmBinaryResult;
   function opendciInitMIBs(): WasmOkResult;
   function opendciLoadMIBs(mibFiles: Record<string, string>): WasmLoadMIBsResult;
   function opendciQueryMIBTree(): WasmStringResult;
@@ -95,6 +97,22 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
   const loadResult = globalThis.opendciLoadSchema(schemaJSON);
   if (loadResult.error) {
     throw new Error(`Failed to load schema: ${loadResult.error}`);
+  }
+
+  // Load the MTA (PacketCable) schema for embedded MTA config support.
+  // Non-fatal: CM encode/decode still works without MTA schema.
+  report("Loading MTA schema\u2026");
+  try {
+    const mtaResp = await fetch(`${base}mta-config.jtd.json`);
+    if (mtaResp.ok) {
+      const mtaJSON = await mtaResp.text();
+      const mtaResult = globalThis.opendciLoadMtaSchema(mtaJSON);
+      if (mtaResult.error) {
+        console.warn("MTA schema load failed (non-fatal):", mtaResult.error);
+      }
+    }
+  } catch (e) {
+    console.warn("MTA schema load failed (non-fatal):", e);
   }
 
   // Initialize the core MIB resolver (embedded MIBs only).
@@ -344,6 +362,20 @@ export function extractCVC(firmware: Uint8Array): ExtractCVCResult {
     throw new Error(result.error);
   }
   return result.result as ExtractCVCResult;
+}
+
+/**
+ * Load the PacketCable MTA JTD schema into the WASM registry.
+ * Enables auto-detection of MTA format in decode/encode and
+ * recursive decoding of embedded MTA configs inside CM files (TLV 216).
+ * Must be called after initWasm(). Throws on error.
+ */
+export function loadMtaSchema(schemaJSON: string): void {
+  if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
+  const result = globalThis.opendciLoadMtaSchema(schemaJSON);
+  if (result.error) {
+    throw new Error(result.error);
+  }
 }
 
 /**

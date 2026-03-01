@@ -45,36 +45,14 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
   },
   {
     name: "MTA / PacketCable",
-    description: "Config with SnmpMibObject entries for PacketCable telephony provisioning",
+    description: "Standalone MTA config with MtaConfigDelimiter start/end markers",
     content: `{
-  // MTA / PacketCable Configuration
-  // Uses SnmpMibObject (TLV 11) to set PacketCable MIB objects
-  // for telephony (voice) provisioning.
+  // PacketCable MTA Configuration File
+  // Uses the MTA schema format with MtaConfigDelimiter markers.
+  // The delimiter value 1 marks the start; 255 marks the end.
 
-  "NetworkAccess": 1, // enabled
-  "MaxNumCpes": 2,
+  "MtaConfigDelimiter": 1, // Telephony Configuration File Start
 
-  "DownstreamServiceFlow": [
-    {
-      "ServiceFlowReference": 20,
-      "QosParamSetType": 7, // provisioned, admitted, and active set
-      "DataRateUnitSetting": 2, // mega-bits per second (Mbps)
-      "MaxSustainedTrafficRate": 250,
-      "MaxTrafficBurst": 500000
-    }
-  ],
-
-  "UpstreamServiceFlow": [
-    {
-      "ServiceFlowReference": 10,
-      "QosParamSetType": 7, // provisioned, admitted, and active set
-      "DataRateUnitSetting": 2, // mega-bits per second (Mbps)
-      "MaxSustainedTrafficRate": 25,
-      "MaxTrafficBurst": 250000
-    }
-  ],
-
-  // PacketCable / telephony MIB objects
   "SnmpMibObject": [
     {
       // PacketCable provisioning mode
@@ -87,6 +65,12 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
       "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.1.0",
       "type": "IPAddress",
       "value": "10.0.0.1"
+    },
+    {
+      // MTA device FQDN
+      "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.5.0",
+      "type": "String",
+      "value": "mta001.example.com"
     }
   ]
 }
