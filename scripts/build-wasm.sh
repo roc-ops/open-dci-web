@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 
 const mibsRoot = path.join('$PROJECT_ROOT', 'vendor/open-dci/mibs');
-const dirs = ['ietf', 'iana', 'cablelabs/DOCSIS', 'cablelabs/OpenCable', 'cablelabs/common', 'cablelabs/wireless'];
+const dirs = ['ietf', 'iana', 'cablelabs/DOCSIS', 'cablelabs/OpenCable', 'cablelabs/PacketCable', 'cablelabs/common', 'cablelabs/wireless'];
 const bundle = {};
 
 for (const dir of dirs) {
