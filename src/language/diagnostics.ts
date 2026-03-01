@@ -7,7 +7,7 @@
  * - x-docsis-range checking (warns when value is outside the allowed range)
  */
 import * as monaco from "monaco-editor";
-import { visit } from "jsonc-parser";
+import { visit, parseTree, Node } from "jsonc-parser";
 import type { DocsisFieldMeta } from "../schema/metadata";
 import { buildDotPath } from "./helpers";
 
@@ -55,6 +55,126 @@ function parseRange(
   }
 
   return null;
+}
+
+/**
+ * Check for duplicate property keys within the same object.
+ * JSONC/JSON5 technically allows duplicates, but DOCSIS configs should not.
+ */
+function checkDuplicateKeys(
+  text: string,
+  model: monaco.editor.ITextModel,
+  markers: monaco.editor.IMarkerData[],
+): void {
+  const tree = parseTree(text, undefined, {
+    allowTrailingComma: true,
+    disallowComments: false,
+  });
+  if (!tree) return;
+
+  function walkObject(node: Node): void {
+    if (node.type !== "object" || !node.children) return;
+
+    const seen = new Map<string, Node>();
+    for (const prop of node.children) {
+      if (prop.type !== "property" || !prop.children || prop.children.length < 1) continue;
+      const keyNode = prop.children[0];
+      if (keyNode.type !== "string" || keyNode.value == null) continue;
+
+      const key = String(keyNode.value);
+      if (seen.has(key)) {
+        const startPos = model.getPositionAt(keyNode.offset);
+        const endPos = model.getPositionAt(keyNode.offset + keyNode.length);
+        markers.push({
+          severity: monaco.MarkerSeverity.Warning,
+          message: `Duplicate property "${key}" — only the last value will be used.`,
+          startLineNumber: startPos.lineNumber,
+          startColumn: startPos.column,
+          endLineNumber: endPos.lineNumber,
+          endColumn: endPos.column,
+        });
+      } else {
+        seen.set(key, keyNode);
+      }
+    }
+
+    // Recurse into children
+    for (const prop of node.children) {
+      if (prop.children) {
+        for (const child of prop.children) {
+          if (child.type === "object" || child.type === "array") walkObject(child);
+        }
+      }
+    }
+  }
+
+  // Also walk arrays
+  function walkArray(node: Node): void {
+    if (node.type !== "array" || !node.children) return;
+    for (const child of node.children) {
+      if (child.type === "object") walkObject(child);
+      else if (child.type === "array") walkArray(child);
+    }
+  }
+
+  if (tree.type === "object") walkObject(tree);
+  else if (tree.type === "array") walkArray(tree);
+}
+
+/**
+ * Check for duplicate ServiceFlowReference values across all service flows.
+ * Each ServiceFlowReference must be unique across the entire config.
+ */
+function checkDuplicateServiceFlowRefs(
+  text: string,
+  model: monaco.editor.ITextModel,
+  markers: monaco.editor.IMarkerData[],
+): void {
+  const refs: { value: number; offset: number; length: number; flow: string }[] = [];
+
+  visit(text, {
+    onLiteralValue(value, offset, length, _startLine, _startChar, pathSupplier) {
+      const path = pathSupplier();
+      const lastSeg = path[path.length - 1];
+      if (lastSeg !== "ServiceFlowReference") return;
+      if (typeof value !== "number") return;
+
+      // Determine which flow type this belongs to
+      const flowType = path.find(
+        (s) => s === "UpstreamServiceFlow" || s === "DownstreamServiceFlow",
+      );
+      refs.push({
+        value,
+        offset,
+        length,
+        flow: typeof flowType === "string" ? flowType : "unknown",
+      });
+    },
+  });
+
+  // Group by value and flag duplicates
+  const byValue = new Map<number, typeof refs>();
+  for (const ref of refs) {
+    const group = byValue.get(ref.value) ?? [];
+    group.push(ref);
+    byValue.set(ref.value, group);
+  }
+
+  for (const [value, group] of byValue) {
+    if (group.length <= 1) continue;
+    for (const ref of group) {
+      const startPos = model.getPositionAt(ref.offset);
+      const endPos = model.getPositionAt(ref.offset + ref.length);
+      markers.push({
+        severity: monaco.MarkerSeverity.Warning,
+        message: `Duplicate ServiceFlowReference ${value} — each service flow must have a unique reference number.`,
+        startLineNumber: startPos.lineNumber,
+        startColumn: startPos.column,
+        endLineNumber: endPos.lineNumber,
+        endColumn: endPos.column,
+      });
+    }
+  }
 }
 
 /**
@@ -145,6 +265,12 @@ export function registerDiagnostics(
         }
       },
     });
+
+    // --- Cross-field: duplicate keys ---
+    checkDuplicateKeys(text, model, markers);
+
+    // --- Cross-field: duplicate ServiceFlowReference ---
+    checkDuplicateServiceFlowRefs(text, model, markers);
 
     monaco.editor.setModelMarkers(model, MARKER_OWNER, markers);
   }
