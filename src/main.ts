@@ -7,7 +7,8 @@ import { configureWorkers } from "./editor/worker";
 import { registerTheme } from "./editor/theme";
 import { initTheme } from "./theme-toggle";
 import { createEditor } from "./editor/setup";
-import { registerSchema, getSchema } from "./schema/loader";
+import type { ConfigFormat } from "./examples";
+import { registerSchema, getSchema, setActiveSchema } from "./schema/loader";
 import { buildMetadataIndex } from "./schema/metadata";
 import { registerHoverProvider } from "./language/hover-provider";
 import { registerCompletionProvider } from "./language/completion-provider";
@@ -243,15 +244,18 @@ function main(): void {
     onSettings: () => {
       // Wired up after editor creation below
     },
-    onLoadExample: (content: string, name: string) => {
+    onLoadExample: (content: string, name: string, _format?: ConfigFormat) => {
       // Wired up after editor creation below — needs editor reference
       void content;
       void name;
     },
+    onFormatChange: (format: ConfigFormat) => {
+      setActiveSchema(format);
+    },
   };
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
-  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant, updateThemeButton } = createToolbar(app, actions);
+  const { setCodecReady, getSecret, setPacketCable, getPacketCableVariant, updateThemeButton, setFormat } = createToolbar(app, actions);
 
   // Editor container
   const editorContainer = document.createElement("div");
@@ -274,7 +278,10 @@ function main(): void {
   actions.onSettings = () => {
     showSettingsModal(app, editor);
   };
-  actions.onLoadExample = (content: string, name: string) => {
+  actions.onLoadExample = (content: string, name: string, format?: ConfigFormat) => {
+    const fmt = format ?? "cm";
+    setActiveSchema(fmt);
+    setFormat(fmt);
     editor.setValue(content);
     currentFileName = `example-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "")}.jsonc`;
     setStatusFileName(statusBar, currentFileName);
@@ -418,11 +425,15 @@ function main(): void {
   // 10e. Register keyboard shortcuts (Ctrl+O, Ctrl+S, Ctrl+Shift+S, Ctrl+Shift+L)
   registerKeyboardShortcuts(editor, actions);
 
-  // 11. Detect PacketCable config type and update toolbar on content changes (300ms debounce)
+  // 11. Detect PacketCable config type and update toolbar/schema on content changes (300ms debounce)
   let configDetectTimer: ReturnType<typeof setTimeout> | undefined;
   const updateConfigDetection = () => {
     const content = editor.getValue();
-    setPacketCable(detectPacketCable(content));
+    const isMta = detectPacketCable(content);
+    setPacketCable(isMta);
+    const detectedFormat = isMta ? "mta" as const : "cm" as const;
+    setActiveSchema(detectedFormat);
+    setFormat(detectedFormat);
   };
   editor.onDidChangeModelContent(() => {
     clearTimeout(configDetectTimer);

@@ -2,6 +2,7 @@
  * Toolbar — top bar with file operations and codec actions.
  */
 import type { PacketCableVariant } from "../codec/index";
+import type { ConfigFormat } from "../examples";
 import { EXAMPLE_CONFIGS } from "../examples";
 
 export interface ToolbarCallbacks {
@@ -16,7 +17,8 @@ export interface ToolbarCallbacks {
   onVendorSchemaManager: () => void;
   onThemeToggle: () => void;
   onSettings: () => void;
-  onLoadExample: (content: string, name: string) => void;
+  onLoadExample: (content: string, name: string, format?: ConfigFormat) => void;
+  onFormatChange: (format: ConfigFormat) => void;
 }
 
 export interface ToolbarResult {
@@ -31,6 +33,10 @@ export interface ToolbarResult {
   getPacketCableVariant: () => PacketCableVariant | undefined;
   /** Update the theme toggle button label to reflect the current theme. */
   updateThemeButton: (currentTheme: "dark" | "light") => void;
+  /** Set the active config format displayed in the toolbar toggle. */
+  setFormat: (format: ConfigFormat) => void;
+  /** Returns the current config format. */
+  getFormat: () => ConfigFormat;
 }
 
 /**
@@ -164,7 +170,7 @@ export function createToolbar(
 
     item.addEventListener("click", () => {
       examplesMenu.classList.add("hidden");
-      callbacks.onLoadExample(example.content, example.name);
+      callbacks.onLoadExample(example.content, example.name, example.format);
     });
 
     examplesMenu.appendChild(item);
@@ -201,6 +207,21 @@ export function createToolbar(
   pcGroup.appendChild(pcLabel);
   pcGroup.appendChild(pcSelect);
 
+  // Config format toggle (CM / MTA)
+  let currentFormat: ConfigFormat = "cm";
+  const cfgFormatBtn = createButton("CM", () => {
+    const next: ConfigFormat = currentFormat === "cm" ? "mta" : "cm";
+    setFormat(next);
+    callbacks.onFormatChange(next);
+  });
+  cfgFormatBtn.className = "toolbar-btn toolbar-format-btn";
+  cfgFormatBtn.title = "Switch between CM (Cable Modem) and MTA (PacketCable) config schemas";
+  cfgFormatBtn.setAttribute("aria-label", "Config format: CM");
+
+  const cfgFormatGroup = document.createElement("div");
+  cfgFormatGroup.className = "toolbar-group";
+  cfgFormatGroup.appendChild(cfgFormatBtn);
+
   const codecGroup = document.createElement("div");
   codecGroup.className = "toolbar-group";
   codecGroup.appendChild(encodeBtn);
@@ -227,6 +248,7 @@ export function createToolbar(
 
   toolbar.appendChild(title);
   toolbar.appendChild(fileGroup);
+  toolbar.appendChild(cfgFormatGroup);
   toolbar.appendChild(secretGroup);
   toolbar.appendChild(pcGroup);
   toolbar.appendChild(codecGroup);
@@ -273,6 +295,16 @@ export function createToolbar(
     themeBtn.textContent = currentTheme === "dark" ? "Light" : "Dark";
   }
 
+  function setFormat(format: ConfigFormat): void {
+    currentFormat = format;
+    cfgFormatBtn.textContent = format.toUpperCase();
+    cfgFormatBtn.setAttribute("aria-label", `Config format: ${format.toUpperCase()}`);
+  }
+
+  function getFormat(): ConfigFormat {
+    return currentFormat;
+  }
+
   return {
     toolbar,
     setCodecReady,
@@ -280,6 +312,8 @@ export function createToolbar(
     setPacketCable,
     getPacketCableVariant,
     updateThemeButton,
+    setFormat,
+    getFormat,
   };
 }
 

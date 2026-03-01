@@ -3,10 +3,13 @@
  * Each example provides realistic JSONC content that can be loaded into the editor.
  */
 
+export type ConfigFormat = "cm" | "mta";
+
 export interface ExampleConfig {
   name: string;
   description: string;
   content: string;
+  format?: ConfigFormat;
 }
 
 export const EXAMPLE_CONFIGS: ExampleConfig[] = [
@@ -46,6 +49,7 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
   {
     name: "MTA / PacketCable",
     description: "Standalone MTA config with MtaConfigDelimiter start/end markers",
+    format: "mta",
     content: `{
   // PacketCable MTA Configuration File
   // Uses the MTA schema format with MtaConfigDelimiter markers.
