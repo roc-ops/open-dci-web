@@ -11,6 +11,7 @@ import { buildMetadataIndex } from "./schema/metadata";
 import { registerHoverProvider } from "./language/hover-provider";
 import { registerCompletionProvider } from "./language/completion-provider";
 import { registerPropertyCompletionProvider } from "./language/property-completion-provider";
+import { registerDocumentSymbolProvider } from "./language/document-symbol-provider";
 import { registerDiagnostics } from "./language/diagnostics";
 import { registerCommentUpdater } from "./language/comment-updater";
 import { registerAutoSuggest } from "./language/auto-suggest";
@@ -99,6 +100,7 @@ function main(): void {
   registerHoverProvider(metadataIndex);
   registerCompletionProvider(metadataIndex);
   registerPropertyCompletionProvider();
+  registerDocumentSymbolProvider();
 
   // 6. Create UI
   let currentFileName = "untitled.jsonc";
