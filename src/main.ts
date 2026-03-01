@@ -208,8 +208,9 @@ function main(): void {
           try {
             const decoded = decode(binary, secret);
             editor.setValue(decoded);
-          } catch {
-            // Non-fatal — the binary was encoded successfully, just can't round-trip
+            showToast(`PacketCable hash (${pcVariant.toUpperCase()}) computed successfully.`, "success");
+          } catch (decodeErr) {
+            console.warn("PC Hash round-trip decode failed:", decodeErr);
           }
         }
 

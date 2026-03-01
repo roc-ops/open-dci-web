@@ -121,14 +121,10 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
       "oid": "1.3.6.1.2.1.2.2.1.7.10", // IF-MIB::ifAdminStatus.10
       "type": "Integer",
       "value": "2" // down(2)
-    },
-
-    // Config hash — must be last SnmpMibObject before end delimiter
-    {
-      "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.7.0", // PKTC-MTA-MIB::pktcMtaDevProvConfigHash.0
-      "type": "HexString",
-      "value": "0000000000000000000000000000000000000000"
     }
+
+    // Config hash (pktcMtaDevProvConfigHash) is computed and inserted
+    // automatically when encoding with the PC Hash checkbox enabled.
   ]
 }
 `,
