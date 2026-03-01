@@ -139,15 +139,17 @@ function checkDuplicateServiceFlowRefs(
       if (lastSeg !== "ServiceFlowReference") return;
       if (typeof value !== "number") return;
 
-      // Determine which flow type this belongs to
+      // Only check ServiceFlowReference inside actual service flow definitions,
+      // not inside packet classifiers (which reference existing flows).
       const flowType = path.find(
         (s) => s === "UpstreamServiceFlow" || s === "DownstreamServiceFlow",
       );
+      if (typeof flowType !== "string") return;
       refs.push({
         value,
         offset,
         length,
-        flow: typeof flowType === "string" ? flowType : "unknown",
+        flow: flowType,
       });
     },
   });
