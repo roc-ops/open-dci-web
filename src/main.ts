@@ -235,6 +235,11 @@ function main(): void {
     onSettings: () => {
       // Wired up after editor creation below
     },
+    onLoadExample: (content: string, name: string) => {
+      // Wired up after editor creation below — needs editor reference
+      void content;
+      void name;
+    },
   };
 
   // Toolbar (encode/decode/MIBs start disabled until WASM is ready)
@@ -260,6 +265,12 @@ function main(): void {
   };
   actions.onSettings = () => {
     showSettingsModal(app, editor);
+  };
+  actions.onLoadExample = (content: string, name: string) => {
+    editor.setValue(content);
+    currentFileName = `example-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "")}.jsonc`;
+    setStatusFileName(statusBar, currentFileName);
+    markClean();
   };
 
   // Drag-and-drop file support

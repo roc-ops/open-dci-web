@@ -2,6 +2,7 @@
  * Toolbar — top bar with file operations and codec actions.
  */
 import type { PacketCableVariant } from "../codec/index";
+import { EXAMPLE_CONFIGS } from "../examples";
 
 export interface ToolbarCallbacks {
   onOpen: () => void;
@@ -14,6 +15,7 @@ export interface ToolbarCallbacks {
   onVendorSchemaManager: () => void;
   onThemeToggle: () => void;
   onSettings: () => void;
+  onLoadExample: (content: string, name: string) => void;
 }
 
 export interface ToolbarResult {
@@ -116,12 +118,59 @@ export function createToolbar(
   title.appendChild(document.createTextNode(" "));
   title.appendChild(editorLink);
 
+  // Examples dropdown
+  const examplesDropdown = document.createElement("div");
+  examplesDropdown.className = "toolbar-dropdown";
+
+  const examplesBtn = createButton("Examples", () => {
+    examplesMenu.classList.toggle("hidden");
+  });
+  examplesBtn.title = "Load an example DOCSIS configuration";
+
+  const examplesMenu = document.createElement("div");
+  examplesMenu.className = "toolbar-dropdown-menu hidden";
+
+  for (const example of EXAMPLE_CONFIGS) {
+    const item = document.createElement("button");
+    item.className = "toolbar-dropdown-item";
+    item.type = "button";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "toolbar-dropdown-item-name";
+    nameSpan.textContent = example.name;
+
+    const descSpan = document.createElement("span");
+    descSpan.className = "toolbar-dropdown-item-desc";
+    descSpan.textContent = example.description;
+
+    item.appendChild(nameSpan);
+    item.appendChild(descSpan);
+
+    item.addEventListener("click", () => {
+      examplesMenu.classList.add("hidden");
+      callbacks.onLoadExample(example.content, example.name);
+    });
+
+    examplesMenu.appendChild(item);
+  }
+
+  examplesDropdown.appendChild(examplesBtn);
+  examplesDropdown.appendChild(examplesMenu);
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!examplesDropdown.contains(e.target as Node)) {
+      examplesMenu.classList.add("hidden");
+    }
+  });
+
   const fileGroup = document.createElement("div");
   fileGroup.className = "toolbar-group";
   fileGroup.appendChild(openBtn);
   fileGroup.appendChild(saveBtn);
   fileGroup.appendChild(shareBtn);
   fileGroup.appendChild(formatBtn);
+  fileGroup.appendChild(examplesDropdown);
 
   const secretGroup = document.createElement("div");
   secretGroup.className = "toolbar-group";
