@@ -25,6 +25,7 @@ import { initMibState, addUserMibs, replaceAllMibs, showMibModal } from "./ui/mi
 import { invalidateMibBrowserCache } from "./ui/mib-browser";
 import { initVendorSchemaState, addUserSchema, showVendorSchemaModal } from "./ui/vendor-schema-manager";
 import { openFile, openBinaryFile } from "./file/open";
+import { registerDropHandler } from "./file/drop";
 import { saveFile, saveBinaryFile } from "./file/save";
 import { initWasm, encode, decode, isReady } from "./codec/index";
 import { detectPacketCable } from "./config-detect";
@@ -228,6 +229,33 @@ function main(): void {
   // Create editor
   const editor = createEditor(editorContainer, DEFAULT_CONTENT);
   editor.updateOptions({ theme: THEME_NAME });
+
+  // Drag-and-drop file support
+  registerDropHandler({
+    container: editorContainer,
+    onTextFile: (name, content) => {
+      editor.setValue(content);
+      currentFileName = name;
+      setStatusFileName(statusBar, currentFileName);
+    },
+    onBinaryFile: (name, binary) => {
+      if (!isReady()) {
+        showToast("The codec is still loading. Please try again in a moment.", "info");
+        return;
+      }
+      try {
+        const secret = getSecret() || undefined;
+        const jsonc = decode(binary, secret);
+        editor.setValue(jsonc);
+        currentFileName = name.replace(/\.(bin|cm|cfg)$/i, ".jsonc");
+        setStatusFileName(statusBar, currentFileName);
+      } catch (err) {
+        console.error("Decode error:", err);
+        showToast("Could not decode the dropped file. It may be corrupted or in an unsupported format.", "error");
+      }
+    },
+    onError: (msg) => showToast(msg, "error"),
+  });
 
   // 7b. Load config from URL hash (if present)
   // #config= takes priority (synchronous, inline-encoded content).
