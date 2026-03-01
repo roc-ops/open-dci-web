@@ -19,6 +19,7 @@ import { registerAutoSuggest } from "./language/auto-suggest";
 import { registerSnmpMibCodeLens } from "./language/snmp-mib-codelens";
 import { registerChunkedHexCodeLens } from "./language/chunked-hex-codelens";
 import { registerCopyTlvPathAction } from "./language/copy-tlv-path-action";
+import { registerFindTlvAction } from "./language/find-tlv-action";
 import { registerKeyboardShortcuts } from "./keyboard-shortcuts";
 import { createToolbar } from "./ui/toolbar";
 import { createStatusBar, setStatusFileName, setStatusDirty, onToggleProblems } from "./ui/status-bar";
@@ -401,7 +402,10 @@ function main(): void {
   // 10c. Register "Copy TLV Path" right-click context menu action
   registerCopyTlvPathAction(editor);
 
-  // 10d. Register keyboard shortcuts (Ctrl+O, Ctrl+S, Ctrl+Shift+S, Ctrl+Shift+L)
+  // 10d. Register "Find TLV Property" search action (Ctrl+Shift+T)
+  registerFindTlvAction(editor, app);
+
+  // 10e. Register keyboard shortcuts (Ctrl+O, Ctrl+S, Ctrl+Shift+S, Ctrl+Shift+L)
   registerKeyboardShortcuts(editor, actions);
 
   // 11. Detect PacketCable config type and update toolbar on content changes (300ms debounce)
