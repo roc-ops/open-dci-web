@@ -16,6 +16,36 @@
  *   - opendciRestoreMIBState(Uint8Array) -> {ok: true} | {error: string}
  */
 
+/** Result types for Go WASM API calls. */
+interface WasmOkResult { ok?: boolean; error?: string }
+interface WasmLoadMIBsResult { ok?: boolean; loaded?: number; error?: string }
+interface WasmStringResult { result?: string; error?: string }
+interface WasmBinaryResult { result?: Uint8Array; error?: string }
+interface WasmExtractCVCResult { result?: ExtractCVCResult; error?: string }
+
+/** Go WASM runtime constructor injected by wasm_exec.js. */
+interface GoInstance {
+  importObject: WebAssembly.Imports;
+  run(instance: WebAssembly.Instance): void;
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var Go: { new(): GoInstance };
+  function opendciLoadSchema(schema: string): WasmOkResult;
+  function opendciDecode(binary: Uint8Array, secret?: string): WasmStringResult;
+  function opendciEncode(json: string, secret?: string, pad?: boolean, packetCableHash?: string): WasmBinaryResult;
+  function opendciInitMIBs(): WasmOkResult;
+  function opendciLoadMIBs(mibFiles: Record<string, string>): WasmLoadMIBsResult;
+  function opendciQueryMIBTree(): WasmStringResult;
+  function opendciResolveName(numericOid: string): WasmStringResult;
+  function opendciResolveOID(name: string): WasmStringResult;
+  function opendciExtractCVC(firmware: Uint8Array): WasmExtractCVCResult;
+  function opendciLoadVendorSchema(schema: string): WasmOkResult;
+  function opendciSerializeMIBState(): WasmBinaryResult;
+  function opendciRestoreMIBState(snapshot: Uint8Array): WasmOkResult;
+}
+
 let wasmReady = false;
 
 export type ProgressCallback = (message: string) => void;
@@ -44,8 +74,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
   await loadScript(`${base}wasm_exec.js`);
 
   // Instantiate the Go WASM module.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const go = new (globalThis as any).Go();
+  const go = new globalThis.Go();
 
   const result = await WebAssembly.instantiateStreaming(
     fetch(`${base}opendci.wasm`),
@@ -63,8 +92,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
   }
   const schemaJSON = await schemaResp.text();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const loadResult: { ok?: boolean; error?: string } = (globalThis as any).opendciLoadSchema(schemaJSON);
+  const loadResult = globalThis.opendciLoadSchema(schemaJSON);
   if (loadResult.error) {
     throw new Error(`Failed to load schema: ${loadResult.error}`);
   }
@@ -73,8 +101,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
   // Non-fatal: encode/decode still work without MIB annotations.
   report("Initializing MIB resolver\u2026");
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mibResult: { ok?: boolean; error?: string } = (globalThis as any).opendciInitMIBs();
+    const mibResult = globalThis.opendciInitMIBs();
     if (mibResult.error) {
       console.warn("MIB resolver init failed (non-fatal):", mibResult.error);
     }
@@ -103,8 +130,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
       try {
         report("Restoring MIB library\u2026");
         const snapshotBuf = new Uint8Array(await snapshotResp.arrayBuffer());
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const restoreResult: { ok?: boolean; error?: string } = (globalThis as any).opendciRestoreMIBState(snapshotBuf);
+        const restoreResult = globalThis.opendciRestoreMIBState(snapshotBuf);
         if (restoreResult.ok) {
           restored = true;
         } else {
@@ -120,8 +146,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
       if (mibCount > 0) {
         report(`Parsing ${mibCount} MIB files\u2026`);
         await new Promise((r) => setTimeout(r, 0));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const loadResult: { ok?: boolean; loaded?: number; error?: string } = (globalThis as any).opendciLoadMIBs(mibBundle);
+        const loadResult = globalThis.opendciLoadMIBs(mibBundle);
         if (loadResult.error) {
           console.warn("MIB loading failed (non-fatal):", loadResult.error);
         }
@@ -142,8 +167,7 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
       if (vendorCount > 0) {
         for (const [filename, schema] of Object.entries(vendorSchemaBundle)) {
           try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const loadResult: { ok?: boolean; error?: string } = (globalThis as any).opendciLoadVendorSchema(JSON.stringify(schema));
+            const loadResult = globalThis.opendciLoadVendorSchema(JSON.stringify(schema));
             if (loadResult.error) {
               console.warn(`Vendor schema ${filename} failed (non-fatal):`, loadResult.error);
             }
@@ -168,10 +192,9 @@ export async function initWasm(onProgress?: ProgressCallback): Promise<InitResul
  */
 export function decode(binary: Uint8Array, secret?: string): string {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: string; error?: string } = secret
-    ? (globalThis as any).opendciDecode(binary, secret)
-    : (globalThis as any).opendciDecode(binary);
+  const result = secret
+    ? globalThis.opendciDecode(binary, secret)
+    : globalThis.opendciDecode(binary);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -189,16 +212,15 @@ export type PacketCableVariant = "na" | "eu" | "ietf";
  */
 export function encode(json: string, secret?: string, packetCableHash?: PacketCableVariant): Uint8Array {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // Build args list — only pass defined arguments to avoid Go seeing "undefined" strings.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const args: any[] = [json];
-  if (secret || packetCableHash) args.push(secret ?? "");
+  // Call with only defined arguments to avoid Go seeing "undefined" strings.
+  let result: WasmBinaryResult;
   if (packetCableHash) {
-    args.push(false); // pad (not used from web UI)
-    args.push(packetCableHash);
+    result = globalThis.opendciEncode(json, secret ?? "", false, packetCableHash);
+  } else if (secret) {
+    result = globalThis.opendciEncode(json, secret);
+  } else {
+    result = globalThis.opendciEncode(json);
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: Uint8Array; error?: string } = (globalThis as any).opendciEncode(...args);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -212,8 +234,7 @@ export function encode(json: string, secret?: string, packetCableHash?: PacketCa
  */
 export function loadMIBs(mibFiles: Record<string, string>): number {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { ok?: boolean; loaded?: number; error?: string } = (globalThis as any).opendciLoadMIBs(mibFiles);
+  const result = globalThis.opendciLoadMIBs(mibFiles);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -226,8 +247,7 @@ export function loadMIBs(mibFiles: Record<string, string>): number {
  */
 export function resetMIBs(): void {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { ok?: boolean; error?: string } = (globalThis as any).opendciInitMIBs();
+  const result = globalThis.opendciInitMIBs();
   if (result.error) {
     throw new Error(`Failed to reset MIBs: ${result.error}`);
   }
@@ -269,8 +289,7 @@ export interface MIBTreeNode {
  */
 export function queryMIBTree(): MIBTreeNode {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: string; error?: string } = (globalThis as any).opendciQueryMIBTree();
+  const result = globalThis.opendciQueryMIBTree();
   if (result.error) {
     throw new Error(result.error);
   }
@@ -283,8 +302,7 @@ export function queryMIBTree(): MIBTreeNode {
  */
 export function resolveName(numericOid: string): string {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: string; error?: string } = (globalThis as any).opendciResolveName(numericOid);
+  const result = globalThis.opendciResolveName(numericOid);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -298,8 +316,7 @@ export function resolveName(numericOid: string): string {
  */
 export function resolveOID(name: string): string {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: string; error?: string } = (globalThis as any).opendciResolveOID(name);
+  const result = globalThis.opendciResolveOID(name);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -322,8 +339,7 @@ export interface ExtractCVCResult {
  */
 export function extractCVC(firmware: Uint8Array): ExtractCVCResult {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { result?: ExtractCVCResult; error?: string } = (globalThis as any).opendciExtractCVC(firmware);
+  const result = globalThis.opendciExtractCVC(firmware);
   if (result.error) {
     throw new Error(result.error);
   }
@@ -338,8 +354,7 @@ export function extractCVC(firmware: Uint8Array): ExtractCVCResult {
  */
 export function loadVendorSchema(schemaJSON: string): void {
   if (!wasmReady) throw new Error("WASM not initialized — call initWasm() first");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result: { ok?: boolean; error?: string } = (globalThis as any).opendciLoadVendorSchema(schemaJSON);
+  const result = globalThis.opendciLoadVendorSchema(schemaJSON);
   if (result.error) {
     throw new Error(result.error);
   }
