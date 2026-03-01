@@ -45,10 +45,10 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
   },
   {
     name: "MTA / PacketCable",
-    description: "Config with MtaConfigDelimiter and PacketCable settings",
+    description: "Config with SnmpMibObject entries for PacketCable telephony provisioning",
     content: `{
   // MTA / PacketCable Configuration
-  // Includes MtaConfigDelimiter to wrap embedded MTA settings
+  // Uses SnmpMibObject (TLV 11) to set PacketCable MIB objects
   // for telephony (voice) provisioning.
 
   "NetworkAccess": 1, // enabled
@@ -74,25 +74,21 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
     }
   ],
 
-  // MTA configuration delimiter — wraps PacketCable / telephony TLVs
-  "MtaConfigDelimiter": {
-    "MtaStartOfMtaConfig": 1,
-    "MtaEndOfMtaConfig": 255,
-
-    // Telephony provisioning server
-    "SnmpMibObject": [
-      {
-        "MibOid": "1.3.6.1.4.1.4491.2.2.1.1.2.7.0",
-        "MibValue": "1",
-        "MibType": 2 // integer
-      },
-      {
-        "MibOid": "1.3.6.1.4.1.4491.2.2.1.1.2.1.0",
-        "MibValue": "10.0.0.1",
-        "MibType": 4 // IP address
-      }
-    ]
-  }
+  // PacketCable / telephony MIB objects
+  "SnmpMibObject": [
+    {
+      // PacketCable provisioning mode
+      "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.7.0",
+      "type": "Integer",
+      "value": "1"
+    },
+    {
+      // PacketCable provisioning server address
+      "oid": "1.3.6.1.4.1.4491.2.2.1.1.2.1.0",
+      "type": "IPAddress",
+      "value": "10.0.0.1"
+    }
+  ]
 }
 `,
   },
@@ -119,13 +115,13 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
     },
     {
       // Priority downstream for VoIP
-      "ServiceFlowReference": 22,
+      "ServiceFlowReference": 21,
       "QosParamSetType": 7, // provisioned, admitted, and active set
       "DataRateUnitSetting": 2, // mega-bits per second (Mbps)
       "MaxSustainedTrafficRate": 10,
       "MaxTrafficBurst": 100000,
       "TrafficPriority": 7,
-      "MaxLatency": 10000 // 10 ms
+      "MaxDownstreamLatency": 10000 // 10 ms in microseconds
     }
   ],
 
@@ -141,41 +137,40 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
     },
     {
       // Priority upstream for VoIP
-      "ServiceFlowReference": 12,
+      "ServiceFlowReference": 11,
       "QosParamSetType": 7, // provisioned, admitted, and active set
       "DataRateUnitSetting": 2, // mega-bits per second (Mbps)
       "MaxSustainedTrafficRate": 2,
       "MaxTrafficBurst": 50000,
       "TrafficPriority": 7,
-      "SchedulingType": 2, // real-time polling service
-      "MaxLatency": 10000 // 10 ms
+      "SchedulingType": 4 // real-time polling service
     }
   ],
 
-  "DownstreamPacketClassifier": [
+  "DownstreamPacketClassification": [
     {
       // Classify VoIP traffic (UDP, SIP port)
       "ClassifierReference": 100,
-      "ServiceFlowReference": 22,
+      "ServiceFlowReference": 21,
       "RulePriority": 64,
-      "IpPacketClassifier": {
+      "Ipv4Classification": {
         "IpProtocol": 17, // UDP
-        "SourcePortStart": 5060,
-        "SourcePortEnd": 5061
+        "TcpUdpSourcePortStart": 5060,
+        "TcpUdpSourcePortEnd": 5061
       }
     }
   ],
 
-  "UpstreamPacketClassifier": [
+  "UpstreamPacketClassification": [
     {
       // Classify VoIP traffic (UDP, SIP port)
       "ClassifierReference": 200,
-      "ServiceFlowReference": 12,
+      "ServiceFlowReference": 11,
       "RulePriority": 64,
-      "IpPacketClassifier": {
+      "Ipv4Classification": {
         "IpProtocol": 17, // UDP
-        "DestPortStart": 5060,
-        "DestPortEnd": 5061
+        "TcpUdpDestinationPortStart": 5060,
+        "TcpUdpDestinationPortEnd": 5061
       }
     }
   ]
@@ -215,26 +210,26 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
 
   // Baseline Privacy Plus (BPI+) settings
   "BaselinePrivacy": {
-    "AuthorizationWaitTimeout": 10, // seconds
-    "ReauthorizationWaitTimeout": 10, // seconds
+    "AuthorizeWaitTimeout": 10, // seconds
+    "ReauthorizeWaitTimeout": 10, // seconds
     "AuthorizationGraceTime": 600, // seconds
     "OperationalWaitTimeout": 1, // seconds
     "RekeyWaitTimeout": 1, // seconds
-    "TEKGraceTime": 600, // seconds
-    "AuthorizationRejectWaitTimeout": 60, // seconds
-    "SAMapWaitTimeout": 1, // seconds
-    "SAMapMaxRetries": 4
+    "TekGraceTime": 600, // seconds
+    "AuthorizeRejectWaitTimeout": 60, // seconds
+    "SaMapWaitTimeout": 1, // seconds
+    "SaMapMaxRetries": 4
   }
 }
 `,
   },
   {
     name: "Vendor-Specific",
-    description: "Config using VendorSpecific with VendorIdentifier and GenericTLV",
+    description: "Config using DocsisExtensionField with VendorId and VendorSubTlvs",
     content: `{
   // Vendor-Specific Configuration
-  // Demonstrates the VendorSpecific TLV for encoding
-  // vendor-proprietary settings using GenericTLV entries.
+  // Demonstrates DocsisExtensionField (TLV 43) for encoding
+  // vendor-proprietary settings using VendorSubTlvs.
 
   "NetworkAccess": 1, // enabled
   "MaxNumCpes": 1,
@@ -259,23 +254,21 @@ export const EXAMPLE_CONFIGS: ExampleConfig[] = [
     }
   ],
 
-  // Vendor-specific information for custom device configuration
-  "VendorSpecific": [
+  // DOCSIS Extension Field (TLV 43) for vendor-specific settings
+  "DocsisExtensionField": [
     {
-      // VendorIdentifier is the vendor's OUI (3-byte hex string)
-      "VendorIdentifier": "00 10 18",
-      "GenericTLV": [
+      // VendorId is the vendor's OUI (3-byte hex string)
+      "VendorId": "001018",
+      "VendorSubTlvs": [
         {
           // Example: enable a proprietary feature (type 1, value 01 = on)
-          "TlvCode": 1,
-          "TlvLength": 1,
-          "TlvValue": "01"
+          "type": 1,
+          "value": "01"
         },
         {
-          // Example: set a proprietary string parameter (type 2)
-          "TlvCode": 2,
-          "TlvLength": 11,
-          "TlvValue": "68 65 6C 6C 6F 20 77 6F 72 6C 64"
+          // Example: set a proprietary hex parameter (type 2)
+          "type": 2,
+          "value": "68656C6C6F20776F726C64"
         }
       ]
     }
